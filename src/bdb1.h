@@ -44,7 +44,7 @@
 #define DB_RDONLY O_RDONLY
 #define DB_TRUNCATE O_TRUNC
 
-#define BDB1_NEED_CURRENT (BDB1_BT_COMPARE | BDB1_BT_PREFIX | BDB1_DUP_COMPARE | BDB1_H_HASH)
+#define BDB1_NEED_CURRENT (BDB1_MARSHAL | BDB1_BT_COMPARE | BDB1_BT_PREFIX | BDB1_DUP_COMPARE | BDB1_H_HASH)
 
 typedef union {
 	BTREEINFO bi;
@@ -76,22 +76,36 @@ struct deleg_class {
     VALUE key;
 };
 
-#define test_dump(dbst, key, a)					\
-{								\
-    int _bdb1_is_nil = 0;					\
-    VALUE _bdb1_tmp_;						\
-    if (dbst->marshal) {					\
-        _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump, 1, a);	\
-    }								\
-    else {							\
-        _bdb1_tmp_ = rb_obj_as_string(a);			\
-        if (a == Qnil)						\
-            _bdb1_is_nil = 1;					\
-        else							\
-            a = _bdb1_tmp_;					\
-    }								\
-    key.data = RSTRING(_bdb1_tmp_)->ptr;			\
-    key.size = RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil;		\
+extern VALUE bdb1_deleg_to_orig _((VALUE));
+
+#define test_dump(dbst, key, a)						\
+{									\
+    int _bdb1_is_nil = 0;						\
+    VALUE _bdb1_tmp_;							\
+    if (dbst->marshal) {						\
+        if (rb_obj_is_kind_of(a, bdb1_cDelegate)) {			\
+	    _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump,		\
+				   1, bdb1_deleg_to_orig(a));		\
+	}								\
+        else {								\
+           _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump, 1, a);	\
+        }								\
+         if (TYPE(_bdb1_tmp_) != T_STRING) {				\
+ 	    rb_raise(rb_eTypeError, "dump() must return String");	\
+ 	}								\
+    }									\
+    else {								\
+        _bdb1_tmp_ = rb_obj_as_string(a);				\
+        if (a == Qnil)							\
+            _bdb1_is_nil = 1;						\
+        else								\
+            a = _bdb1_tmp_;						\
+    }									\
+    (key).data = ALLOCA_N(char,						\
+			  RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil + 1);	\
+    MEMCPY((key).data, RSTRING(_bdb1_tmp_)->ptr, char,			\
+			  RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil + 1);	\
+    key.size = RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil;			\
 }
 
 #define GetDB(obj, dbst)						\

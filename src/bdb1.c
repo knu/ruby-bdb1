@@ -236,14 +236,21 @@ bdb1_i185_btree(obj, dbstobj)
     }
     else if (strcmp(options, "marshal") == 0) {
         switch (value) {
-        case Qtrue: dbst->marshal = bdb1_mMarshal; break;
-        case Qfalse: dbst->marshal = Qfalse; break;
+        case Qtrue: 
+	    dbst->marshal = bdb1_mMarshal;
+	    dbst->options |= BDB1_MARSHAL;
+	    break;
+        case Qfalse: 
+	    dbst->marshal = Qfalse;
+	    dbst->options &= ~BDB1_MARSHAL;
+	    break;
         default: 
 	    if (!rb_respond_to(value, id_load) ||
 		!rb_respond_to(value, id_dump)) {
 		rb_raise(bdb1_eFatal, "marshal value must be true or false");
 	    }
 	    dbst->marshal = value;
+	    dbst->options |= BDB1_MARSHAL;
 	    break;
         }
     }
@@ -289,14 +296,21 @@ bdb1_i185_hash(obj, dbstobj)
     }
     else if (strcmp(options, "marshal") == 0) {
         switch (value) {
-        case Qtrue: dbst->marshal = bdb1_mMarshal; break;
-        case Qfalse: dbst->marshal = Qfalse; break;
+        case Qtrue: 
+	    dbst->marshal = bdb1_mMarshal;
+	    dbst->options |= BDB1_MARSHAL;
+	    break;
+        case Qfalse: 
+	    dbst->marshal = Qfalse;
+	    dbst->options &= ~BDB1_MARSHAL;
+	    break;
         default: 
 	    if (!rb_respond_to(value, id_load) ||
 		!rb_respond_to(value, id_dump)) {
 		rb_raise(bdb1_eFatal, "marshal value must be true or false");
 	    }
 	    dbst->marshal = value;
+	    dbst->options |= BDB1_MARSHAL;
 	    break;
         }
     }
@@ -370,14 +384,21 @@ bdb1_i185_recno(obj, dbstobj)
     }
     else if (strcmp(options, "marshal") == 0) {
         switch (value) {
-        case Qtrue: dbst->marshal = bdb1_mMarshal; break;
-        case Qfalse: dbst->marshal = Qfalse; break;
+        case Qtrue: 
+	    dbst->marshal = bdb1_mMarshal;
+	    dbst->options |= BDB1_MARSHAL;
+	    break;
+        case Qfalse: 
+	    dbst->marshal = Qfalse;
+	    dbst->options &= ~BDB1_MARSHAL;
+	    break;
         default: 
 	    if (!rb_respond_to(value, id_load) ||
 		!rb_respond_to(value, id_dump)) {
 		rb_raise(bdb1_eFatal, "marshal value must be true or false");
 	    }
 	    dbst->marshal = value;
+	    dbst->options |= BDB1_MARSHAL;
 	    break;
         }
     }
@@ -468,6 +489,11 @@ bdb1_open_common(argc, argv, obj)
     }
     res = Data_Make_Struct(obj, bdb1_DB, bdb1_mark, bdb1_free, dbst);
     dbst->type = NUM2INT(a);
+    if (rb_respond_to(obj, id_load) == Qtrue &&
+	rb_respond_to(obj, id_dump) == Qtrue) {
+	dbst->marshal = obj;
+	dbst->options |= BDB1_MARSHAL;
+    }
     if (!NIL_P(f)) {
 	if (TYPE(f) != T_HASH) {
             rb_raise(bdb1_eFatal, "options must be an hash");
@@ -1270,6 +1296,9 @@ Init_bdb1()
     id_bt_prefix = rb_intern("bdb1_bt_prefix");
     id_h_hash = rb_intern("bdb1_h_hash");
     id_proc_call = rb_intern("call");
+    if (rb_const_defined_at(rb_cObject, rb_intern("BDB1"))) {
+	rb_raise(rb_eNameError, "class already defined");
+    }
     bdb1_mDb = rb_define_module("BDB1");
     bdb1_eFatal = rb_define_class_under(bdb1_mDb, "Fatal", rb_eStandardError);
 /* CONSTANT */

@@ -5,3 +5,8 @@
 * corrected Recnum#shift, Recnum#pop, Recnum#delete_at, #nitems
 * Recnum#cmp accept now an array
 
+-- 0.1.4
+
+* corrected bug with gc (test_dump)
+* protected against old class
+
