@@ -106,6 +106,7 @@ bdb1_sary_aref(argc, argv, obj)
     }
     return bdb1_sary_entry(obj, arg1);
 }
+
 static VALUE
 bdb1_intern_shift_pop(obj, depart, len)
     VALUE obj;
@@ -125,6 +126,7 @@ bdb1_intern_shift_pop(obj, depart, len)
     for (i = 0; i < len; i++) {
 	ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, depart));
 	if (ret == DB_NOTFOUND) break;
+	rb_ary_push(res, bdb1_test_load(dbst, data));
 	bdb1_test_error(dbst->dbp->del(dbst->dbp, 0, R_CURSOR));
 	if (dbst->len > 0) dbst->len--;
     }
@@ -407,7 +409,7 @@ bdb1_sary_unshift_m(argc, argv, obj)
     VALUE obj;
 {
     bdb1_DB *dbst;
-    VALUE tmp[2];
+    VALUE tmp[3];
     long i;
 
     if (argc == 0) {
@@ -415,17 +417,12 @@ bdb1_sary_unshift_m(argc, argv, obj)
     }
     if (argc > 0) {
 	GetDB(obj, dbst);
-	for (i = dbst->len - 1; i >= 0; i++) {
-	    tmp[0] = INT2NUM(i);
-	    tmp[1] = bdb1_get(1, tmp, obj);
-	    tmp[0] = INT2NUM(i + argc);
-	    bdb1_put(2, tmp, obj);
-	    dbst->len++;
-	}
-	for (i = 0; i < argc; i++) {
-	    tmp[0] = INT2NUM(i);
+	tmp[0] = INT2NUM(0);
+	tmp[2] = INT2NUM(R_IBEFORE);
+	for (i = argc - 1; i >= 0; i--) {
 	    tmp[1] = argv[i];
-	    bdb1_put(2, tmp, obj);
+	    bdb1_put(3, tmp, obj);
+	    dbst->len++;
 	}
     }
     return obj;
@@ -467,12 +464,10 @@ bdb1_sary_indexes(argc, argv, obj)
 {
     VALUE indexes;
     int i;
-
     indexes = rb_ary_new2(argc);
     for (i = 0; i < argc; i++) {
-	RARRAY(indexes)->ptr[i] = bdb1_sary_entry(obj, argv[i]);
+	rb_ary_push(indexes, bdb1_sary_entry(obj, argv[i]));
     }
-    RARRAY(indexes)->len = i;
     return indexes;
 }
 
@@ -590,6 +585,7 @@ bdb1_sary_delete_at_m(obj, a)
     tmp = INT2NUM(pos);
     del = bdb1_get(1, &tmp, obj);
     bdb1_del(obj, tmp);
+    dbst->len--;
     return del;
 }
 
@@ -693,29 +689,41 @@ bdb1_sary_cmp(obj, obj2)
     VALUE obj, obj2;
 {
     bdb1_DB *dbst, *dbst2;
-    VALUE a, a2, tmp;
+    VALUE a, a2, tmp, ary;
     long i, len;
 
     if (obj == obj2) return INT2FIX(0);
-    if (!rb_obj_is_kind_of(obj2, bdb1_cRecnum)) {
-	rb_raise(rb_eTypeError, "must be a BDB::Recnum");
-    }
     GetDB(obj, dbst);
-    GetDB(obj2, dbst2);
     len = dbst->len;
-    if (len > dbst2->len) {
-	len = dbst2->len;
+    if (!rb_obj_is_kind_of(obj2, bdb1_cRecnum)) {
+	obj2 = rb_convert_type(obj2, T_ARRAY, "Array", "to_ary");
+	if (len > RARRAY(obj2)->len) {
+	    len = RARRAY(obj2)->len;
+	}
+	ary = Qtrue;
+    }
+    else {
+	GetDB(obj2, dbst2);
+	if (len > dbst2->len) {
+	    len = dbst2->len;
+	}
+	ary = Qfalse;
     }
     for (i = 0; i < len; i++) {
 	tmp = INT2NUM(i);
 	a = bdb1_get(1, &tmp, obj);
-	a2 = bdb1_get(1, &tmp, obj2);
+	if (ary) {
+	    a2 = RARRAY(obj2)->ptr[i];
+	}
+	else {
+	    a2 = bdb1_get(1, &tmp, obj2);
+	}
 	tmp = rb_funcall(a, id_cmp, 1, a2);
 	if (tmp != INT2FIX(0)) {
 	    return tmp;
 	}
     }
-    len = dbst->len - dbst2->len;
+    len = dbst->len - ary?RARRAY(obj2)->len:dbst2->len;
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);
     return INT2FIX(-1);
@@ -836,12 +844,26 @@ bdb1_sary_nitems(obj)
 
     GetDB(obj, dbst);
     j = 0;
-    for (i = 0; i < dbst->len; ) {
+    for (i = 0; i < dbst->len; i++) {
 	tmp = INT2NUM(i);
 	tmp = bdb1_get(1, &tmp, obj);
 	if (!NIL_P(tmp)) j++;
     }
     return INT2NUM(j);
+}
+
+static VALUE
+bdb1_sary_each_index(obj)
+    VALUE obj;
+{
+    bdb1_DB *dbst;
+    long i;
+
+    GetDB(obj, dbst);
+    for (i = 0; i< dbst->len; i++) {
+	rb_yield(INT2NUM(i));
+    }
+    return obj;
 }
 
 void bdb1_init_recnum()
@@ -865,7 +887,7 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "shift", bdb1_sary_shift, 0);
     rb_define_method(bdb1_cRecnum, "unshift", bdb1_sary_unshift_m, -1);
     rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, 0);
-    rb_define_method(bdb1_cRecnum, "each_index", bdb1_each_key, 0);
+    rb_define_method(bdb1_cRecnum, "each_index", bdb1_sary_each_index, 0);
     rb_define_method(bdb1_cRecnum, "reverse_each", bdb1_each_eulav, 0);
     rb_define_method(bdb1_cRecnum, "length", bdb1_sary_length, 0);
     rb_define_alias(bdb1_cRecnum,  "size", "length");

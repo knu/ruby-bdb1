@@ -62,6 +62,8 @@ class TestRecnum < RUNIT::TestCase
    end
 
    def test_04_op
+      assert_equal($bdb1 & ["1", "2", "3"], $array & ["1", "2", "3"], "<&>")
+      assert_equal($bdb1 & [], $array & [], "<&>")
       assert_equal($bdb1 + ["3", "4"], $array + ["3", "4"], "<plus>")
       assert_equal(["3", "4"] + $bdb1, ["3", "4"] + $array, "<plus>")
       assert_equal($bdb1 - ["3", "4"], $array - ["3", "4"], "<minus>")

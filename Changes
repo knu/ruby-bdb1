@@ -1,0 +1,7 @@
+-- 0.1.3
+
+* corrected an error for Recnum#indexes 
+* corrected Recnum#unshift (length)
+* corrected Recnum#shift, Recnum#pop, Recnum#delete_at, #nitems
+* Recnum#cmp accept now an array
+

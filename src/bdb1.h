@@ -55,7 +55,7 @@ typedef union {
 typedef struct {
     int options, len, has_info;
     DBTYPE type;
-    VALUE bt_compare, bt_prefix, dup_compare, h_hash;
+    VALUE bt_compare, bt_prefix, h_hash;
     DB *dbp;
     u_int32_t flags;
     int array_base;

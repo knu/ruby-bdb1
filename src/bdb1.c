@@ -6,7 +6,7 @@ ID id_dump, id_load, id_current_db;
 
 static VALUE bdb1_cBtree, bdb1_cHash, bdb1_cUnknown;
 
-static ID id_bt_compare, id_bt_prefix, id_dup_compare, id_h_hash, id_proc_call;
+static ID id_bt_compare, id_bt_prefix, id_h_hash, id_proc_call;
 
 static VALUE bdb1_errstr;
 static int bdb1_errcall = 0;
@@ -144,26 +144,6 @@ bdb1_bt_prefix(a, b)
     return NUM2INT(res);
 } 
 
-static int
-bdb1_dup_compare(a, b)
-    DBT *a, *b;
-{
-    VALUE obj, av, bv, res;
-    bdb1_DB *dbst;
-
-    if ((obj = rb_thread_local_aref(rb_thread_current(), id_current_db)) == Qnil) {
-	rb_raise(bdb1_eFatal, "BUG : current_db not set");
-    }
-    Data_Get_Struct(obj, bdb1_DB, dbst);
-    av = bdb1_test_load(dbst, *a);
-    bv = bdb1_test_load(dbst, *b);
-    if (dbst->dup_compare == 0)
-	res = rb_funcall(obj, id_dup_compare, 2, av, bv);
-    else
-	res = rb_funcall(dbst->dup_compare, id_proc_call, 2, av, bv);
-    return NUM2INT(res);
-}
-
 static u_int32_t
 bdb1_h_hash(bytes, length)
     void *bytes;
@@ -202,7 +182,6 @@ bdb1_mark(dbst)
     if (dbst->marshal) rb_gc_mark(dbst->marshal);
     if (dbst->bt_compare) rb_gc_mark(dbst->bt_compare);
     if (dbst->bt_prefix) rb_gc_mark(dbst->bt_prefix);
-    if (dbst->dup_compare) rb_gc_mark(dbst->dup_compare);
     if (dbst->h_hash) rb_gc_mark(dbst->h_hash);
 }
 
@@ -496,9 +475,27 @@ bdb1_open_common(argc, argv, obj)
 	switch(type) {
 	case 0:
 	    rb_iterate(rb_each, f, bdb1_i185_btree, res);
+	    if (dbst->bt_compare == 0 && 
+		rb_method_boundp(obj, id_bt_compare, 0) == Qtrue) {
+		dbst->has_info = Qtrue;
+		dbst->options |= BDB1_BT_COMPARE;
+		dbst->info.bi.compare = bdb1_bt_compare;
+	    }
+	    if (dbst->bt_prefix == 0 && 
+		rb_method_boundp(obj, id_bt_prefix, 0) == Qtrue) {
+		dbst->has_info = Qtrue;
+		dbst->options |= BDB1_BT_PREFIX;
+		dbst->info.bi.prefix = bdb1_bt_prefix;
+	    }
 	    break;
 	case 1:
 	    rb_iterate(rb_each, f, bdb1_i185_hash, res);
+	    if (dbst->h_hash == 0 && 
+		rb_method_boundp(obj, id_h_hash, 0) == Qtrue) {
+		dbst->has_info = Qtrue;
+		dbst->options |= BDB1_H_HASH;
+		dbst->info.hi.hash = bdb1_h_hash;
+	    }
 	    break;
 	case 2:
 	    rb_iterate(rb_each, f, bdb1_i185_recno, res);
@@ -1271,7 +1268,6 @@ Init_bdb1()
     id_current_db = rb_intern("bdb1_current_db");
     id_bt_compare = rb_intern("bdb1_bt_compare");
     id_bt_prefix = rb_intern("bdb1_bt_prefix");
-    id_dup_compare = rb_intern("bdb1_dup_compare");
     id_h_hash = rb_intern("bdb1_h_hash");
     id_proc_call = rb_intern("call");
     bdb1_mDb = rb_define_module("BDB1");

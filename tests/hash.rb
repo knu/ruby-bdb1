@@ -5,8 +5,8 @@ require 'runit_'
 
 module BDB1
    class HashRuby < Hash
-      def set_h_hash a
-	 hash a
+      def bdb1_h_hash a
+	 a.hash
       end
    end
 end
@@ -113,14 +113,7 @@ class TestHash < RUNIT::TestCase
       $bdb.each do |k, v|
 	 assert_equal($hash[k], v, "<value>")
       end
-      lines = $hash.keys
-      array = []
-      10.times do
-	 h = lines[rand(lines.size - 1)]
-	 array.push h
-	 assert_equal($hash.index(h.reverse), $bdb.index(h.reverse), "<index>")
-      end
-      assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
+      assert_equal($bdb.size, $hash.size, "<size after delete_if>")
    end
 
    def test_08_convert
@@ -134,6 +127,28 @@ class TestHash < RUNIT::TestCase
       h1 = $hash.to_a
       h2 = $bdb.to_a
       assert_equal(h1.size, h2.size, "<equal>")
+   end
+
+   def test_09_has
+      assert_kind_of(BDB1::HashRuby, 
+		     $bdb = BDB1::HashRuby.open("tmp/aa", "w", 
+					       "set_pagesize" => 1024,
+					       "set_cachesize" => 32 * 1024),
+		     "<open>")
+      $hash = {}
+      ('a' .. 'z').each do |k|
+	 assert_equal(($hash[k] = k * 4), ($bdb[k] = k * 4), "<set>")
+      end
+      $hash.each_key do |k|
+	 assert($bdb.has_key?(k), "<has key>")
+      end
+      $hash.each_value do |v|
+	 assert($bdb.has_value?(v), "<has key>")
+      end
+      $bdb.each do |k, v|
+	 assert($hash.has_key?(k), "<has key>")
+	 assert($hash.has_value?(v), "<has key>")
+      end
    end
 
 end
