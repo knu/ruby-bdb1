@@ -3,15 +3,14 @@ ARGV.collect! {|x| x.sub(/^--with-db-prefix=/, "--with-db-dir=") }
 
 require 'mkmf'
 
-def resolve(key)
-   name = key.dup
-   true while name.gsub!(/\$\((\w+)\)/) { CONFIG[$1] }
-   name
-end
-
-if ! find_library(resolve(CONFIG["LIBRUBY"]).sub(/^lib(.*)\.\w+\z/, '\\1'), 
-                  "ruby_init", resolve(CONFIG["archdir"]))
-   raise "can't find -lruby"
+if unknown = enable_config("unknown")
+   libs = if CONFIG.key?("LIBRUBYARG_STATIC")
+	     Config::expand(CONFIG["LIBRUBYARG_STATIC"].dup).sub(/^-l/, '')
+	  else
+	     Config::expand(CONFIG["LIBRUBYARG"].dup).sub(/lib([^.]*).*/, '\\1')
+	  end
+   unknown = find_library(libs, "ruby_init", 
+			  Config::expand(CONFIG["archdir"].dup))
 end
 
 dir_config("db")
@@ -31,15 +30,17 @@ create_makefile("bdb1")
 
 begin
    make = open("Makefile", "a")
-   make.print <<-EOF
+   if unknown
+      make.print <<-EOF
 
 unknown: $(DLLIB)
 \t@echo "main() {}" > /tmp/a.c
-\t$(CC) -static /tmp/a.c $(OBJS) $(CPPFLAGS) $(DLDFLAGS) #$stat_lib #{Config::CONFIG["LIBS"]} $(LIBS) $(LOCAL_LIBS)
+\t$(CC) -static /tmp/a.c $(OBJS) $(CPPFLAGS) $(LIBPATH) $(LIBS) $(LOCAL_LIBS)
 \t@-rm /tmp/a.c a.out
 
-test: $(DLLIB)
-   EOF
+EOF
+   end
+   make.puts "test: $(DLLIB)"
 ensure
    make.close
 end
