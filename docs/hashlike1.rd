@@ -56,6 +56,10 @@ These are the common methods for ((|BDB1::Btree|)), ((|BDB1::Hash|)),
                 and it is an error to specify it in a transaction
                 protected environment. 
 
+           : ((|BDB1::WRITE|))
+               Open the database for writing. Without this flag, any
+               attempt to modify items in the database will fail.
+
        : ((|options for all classes|))
          Hash, Possible options are
 

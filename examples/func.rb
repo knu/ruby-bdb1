@@ -9,14 +9,14 @@ module BDB1
    end
 end
 a = { "gamma" => 4, "Alpha" => 1, "delta" => 3, "Beta" => 2, "delta" => 3}
-db = BDB1::Btreesort.open "alpha", "w"
+db = BDB1::Btreesort.open "tmp/alpha", "w"
 a.each do |x, y|
    db[x] = y
 end
 db.each do |x, y|
    puts "SORT : #{x} -- #{y}"
 end
-db = BDB1::Hash.open "alpha", "w",
+db = BDB1::Hash.open "tmp/alpha", "w",
    "set_h_hash" => lambda { |x| x.hash }
 a.each do |x, y|
    puts "#{x} -- #{y}"

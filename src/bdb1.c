@@ -75,7 +75,6 @@ bdb1_test_load(dbst, a)
     return res;
 }
 
-
 static VALUE 
 test_load_dyna(obj, key, val)
     VALUE obj;
@@ -449,7 +448,7 @@ bdb1_open_common(argc, argv, obj)
 	    if (strcmp(RSTRING(c)->ptr, "r") == 0)
 		oflags = DB_RDONLY;
 	    else if (strcmp(RSTRING(c)->ptr, "r+") == 0)
-		oflags = 0;
+		oflags = DB_WRITE;
 	    else if (strcmp(RSTRING(c)->ptr, "w") == 0 ||
 		     strcmp(RSTRING(c)->ptr, "w+") == 0)
 		oflags = DB_CREATE | DB_TRUNCATE | DB_WRITE;
@@ -742,6 +741,31 @@ bdb1_get_dyna(argc, argv, obj)
 }
 
 static VALUE
+bdb1_fetch(argc, argv, obj)
+    int argc;
+    VALUE *argv, obj;
+{
+    VALUE key, if_none;
+    VALUE val;
+
+    rb_scan_args(argc, argv, "11", &key, &if_none);
+    val = bdb1_get_internal(1, argv, obj, Qundef, 1);
+    if (val == Qundef) {
+	if (rb_block_given_p()) {
+	    if (argc > 1) {
+		rb_raise(rb_eArgError, "wrong # of arguments", argc);
+	    }
+	    return rb_yield(key);
+	}
+	if (argc == 1) {
+	    rb_raise(rb_eIndexError, "key not found");
+	}
+	return if_none;
+    }
+    return val;
+}
+
+static VALUE
 bdb1_has_key(obj, key)
     VALUE obj, key;
 {
@@ -942,14 +966,15 @@ bdb1_each_vc(obj, replace)
 }
 
 static VALUE
-bdb1_each_valuec(obj, sens)
-    VALUE obj;
+bdb1_each_valuec(obj, sens, result)
+    VALUE obj, result;
     int sens;
 {
     bdb1_DB *dbst;
     DBT key, data;
     int ret, flags;
     db_recno_t recno;
+    VALUE interm, rest;
     
     GetDB(obj, dbst);
     init_recno(dbst, key, recno);
@@ -958,16 +983,20 @@ bdb1_each_valuec(obj, sens)
     do {
         ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, flags));
         if (ret == DB_NOTFOUND) {
-            return Qnil;
+            return result;
         }
 	flags = sens;
 	free_key(dbst, key);
-        rb_yield(bdb1_test_load(dbst, data));
+	interm = bdb1_test_load(dbst, data);
+        rest = rb_yield(interm);
+	if (result != Qnil && RTEST(rest)) {
+	    rb_ary_push(result, interm);
+	}
     } while (1);
 }
 
-VALUE bdb1_each_value(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_NEXT); }
-VALUE bdb1_each_eulav(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_PREV); }
+VALUE bdb1_each_value(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_NEXT, Qnil); }
+VALUE bdb1_each_eulav(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_PREV, Qnil); }
 
 static VALUE
 bdb1_each_keyc(obj, sens)
@@ -1285,6 +1314,31 @@ bdb1_sync(obj)
     return Qtrue;
 }
 
+#if RUBY_VERSION_CODE >= 172
+static VALUE
+bdb1_select(argc, argv, obj)
+    int argc;
+    VALUE *argv, obj;
+{
+    VALUE result = rb_ary_new();
+    long i;
+
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	bdb1_each_valuec(obj, DB_NEXT, result);
+    }
+    else {
+	for (i = 0; i < argc; i++) {
+	    rb_ary_push(result, bdb1_get(1, argv + i, obj));
+	}
+    }
+    return result;
+}
+#endif
+
+
 void
 Init_bdb1()
 {
@@ -1320,6 +1374,7 @@ Init_bdb1()
     rb_define_const(bdb1_mDb, "RDONLY", INT2FIX(DB_RDONLY));
     rb_define_const(bdb1_mDb, "SET_RANGE", INT2FIX(DB_SET_RANGE));
     rb_define_const(bdb1_mDb, "TRUNCATE", INT2FIX(DB_TRUNCATE));
+    rb_define_const(bdb1_mDb, "WRITE", INT2FIX(DB_WRITE));
     rb_define_const(bdb1_mDb, "NOOVERWRITE", INT2FIX(DB_NOOVERWRITE));
 /* DATABASE */
     bdb1_cCommon = rb_define_class_under(bdb1_mDb, "Common", rb_cObject);
@@ -1337,7 +1392,7 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "get", bdb1_get_dyna, -1);
     rb_define_method(bdb1_cCommon, "db_get", bdb1_get_dyna, -1);
     rb_define_method(bdb1_cCommon, "[]", bdb1_get_dyna, -1);
-    rb_define_method(bdb1_cCommon, "fetch", bdb1_get_dyna, -1);
+    rb_define_method(bdb1_cCommon, "fetch", bdb1_fetch, -1);
     rb_define_method(bdb1_cCommon, "delete", bdb1_del, 1);
     rb_define_method(bdb1_cCommon, "del", bdb1_del, 1);
     rb_define_method(bdb1_cCommon, "db_del", bdb1_del, 1);
@@ -1375,6 +1430,9 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "index", bdb1_index, 1);
     rb_define_method(bdb1_cCommon, "indexes", bdb1_indexes, -1);
     rb_define_method(bdb1_cCommon, "indices", bdb1_indexes, -1);
+#if RUBY_VERSION_CODE >= 172
+    rb_define_method(bdb1_cCommon, "select", bdb1_select, -1);
+#endif
     bdb1_cBtree = rb_define_class_under(bdb1_mDb, "Btree", bdb1_cCommon);
     rb_define_method(bdb1_cBtree, "duplicates", bdb1_bt_duplicates, -1);
     rb_define_method(bdb1_cBtree, "each_dup", bdb1_bt_dup, 1);

@@ -5,8 +5,11 @@ if prefix = with_config("db-prefix")
     $LDFLAGS += " -L#{prefix}/lib"
 end
 $CFLAGS += " -I#{incdir}" if incdir = with_config("db-include-dir")
-$LDFLAGS += " -I#{libdir}" if libdir = with_config("db-lib-dir")
-if !(have_library("db1", "__hash_open") || have_library("db", "__hash_open"))
+$LDFLAGS += " -L#{libdir}" if libdir = with_config("db-lib-dir")
+test = enable_config("test")
+unless (!test && (have_func("dbopen") ||
+		  have_library("db1", "dbopen")) || 
+	have_library("db", "dbopen"))
     raise "libdb.a not found"
 end
 create_makefile("bdb1")

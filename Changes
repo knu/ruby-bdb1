@@ -10,3 +10,13 @@
 * corrected bug with gc (test_dump)
 * protected against old class
 
+-- 0.1.5
+
+* change extconf.rb (Thanks "Akinori MUSHA" <knu@iDaemons.org>
+                            "Tsugiakzu Shibata" <ts@ts.tsden.org>)
+
+* Common::open(file, "r+") ==> BDB1::WRITE 
+                    (Thanks "Akinori MUSHA" <knu@iDaemons.org>)
+* Common#select (1.7.2)
+* corrected Common#fetch
+* corrected tests (assert)

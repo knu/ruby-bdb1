@@ -37,7 +37,7 @@ class TestHash < RUNIT::TestCase
       assert_equal("alpha", $bdb["alpha"], "<retrieve value>")
       assert_equal(nil, $bdb["gamma"] = nil, "<set nil>")
       assert_equal(nil, $bdb["gamma"], "<retrieve nil>")
-      assert($bdb.key?("alpha"), "<has key>")
+      assert($bdb.key?("alpha") == "alpha", "<has key>")
       assert_equal(false, $bdb.key?("unknown"), "<has unknown key>")
       assert($bdb.value?(nil), "<has nil>")
       assert($bdb.value?("alpha"), "<has value>")
@@ -140,7 +140,7 @@ class TestHash < RUNIT::TestCase
 	 assert_equal(($hash[k] = k * 4), ($bdb[k] = k * 4), "<set>")
       end
       $hash.each_key do |k|
-	 assert($bdb.has_key?(k), "<has key>")
+	 assert($bdb.has_key?(k) == (k * 4), "<has key>")
       end
       $hash.each_value do |v|
 	 assert($bdb.has_value?(v), "<has key>")

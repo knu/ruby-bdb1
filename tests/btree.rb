@@ -37,7 +37,7 @@ class TestBtree < RUNIT::TestCase
       assert_equal("alpha", $bdb["alpha"], "<retrieve value>")
       assert_equal(nil, $bdb["gamma"] = nil, "<set nil>")
       assert_equal(nil, $bdb["gamma"], "<retrieve nil>")
-      assert($bdb.key?("alpha"), "<has key>")
+      assert($bdb.key?("alpha") == "alpha", "<has key>")
       assert_equal(false, $bdb.key?("unknown"), "<has unknown key>")
       assert($bdb.value?(nil), "<has nil>")
       assert($bdb.value?("alpha"), "<has value>")
