@@ -212,14 +212,22 @@ class TestRecnum < Inh::TestCase
 	 rand(12).times do 
 	    aa.push rand $bdb1.size
 	 end
-	 assert_equal($array.indices(*aa), $bdb1.indices(*aa), "<indices>")
+	 if RUBY_VERSION >= "1.7.2"
+	    assert_equal($array.select(*aa), $bdb1.select(*aa), "<select>")
+	 else
+	    assert_equal($array.indices(*aa), $bdb1.indices(*aa), "<indices>")
+	 end
       end
       100.times do
 	 aa = []
 	 rand(12).times do 
 	    aa.push(-1 * rand($bdb1.size))
 	 end
-	 assert_equal($array.indices(*aa), $bdb1.indices(*aa), "<negative indices #{aa}>")
+	 if RUBY_VERSION >= "1.7.2"
+	    assert_equal($array.select(*aa), $bdb1.select(*aa), "<negative select #{aa}>")
+	 else
+	    assert_equal($array.indices(*aa), $bdb1.indices(*aa), "<negative indices #{aa}>")
+	 end
       end
    end
 

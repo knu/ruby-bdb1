@@ -1,4 +1,5 @@
 #include <ruby.h>
+#include <version.h>
 
 #ifdef COMPAT185
 #include <db_185.h>
@@ -24,6 +25,7 @@
 #define BDB1_BT_PREFIX  16
 #define BDB1_DUP_COMPARE 32
 #define BDB1_H_HASH 64
+#define BDB1_FUNCTION (BDB1_BT_COMPARE|BDB1_BT_PREFIX|BDB1_DUP_COMPARE|BDB1_H_HASH)
 
 #define DB_SET_RANGE    R_CURSOR
 #define DB_FIRST        R_FIRST
@@ -82,52 +84,6 @@ struct deleg_class {
 
 extern VALUE bdb1_deleg_to_orig _((VALUE));
 
-#define test_dump(obj, key, a, type_kv)					\
-{									\
-    bdb1_DB *dbst;							\
-    int _bdb1_is_nil = 0;						\
-    VALUE _bdb1_tmp_ = a;						\
-    Data_Get_Struct(obj, bdb1_DB, dbst);				\
-    if (dbst->filter[type_kv]) {					\
-	if (FIXNUM_P(dbst->filter[type_kv])) {				\
-	    _bdb1_tmp_ = rb_funcall(obj,				\
-				   NUM2INT(dbst->filter[type_kv]),	\
-                                   1, a);				\
-	}								\
-	else {								\
-	    _bdb1_tmp_ = rb_funcall(dbst->filter[type_kv],		\
-				    bdb1_id_call, 1, a);		\
- 	}								\
-    }									\
-    if (dbst->marshal) {						\
-        if (rb_obj_is_kind_of(a, bdb1_cDelegate)) {			\
-	    _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump,		\
-				   1, bdb1_deleg_to_orig(a));		\
-	}								\
-        else {								\
-           _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump, 1, a);	\
-        }								\
-         if (TYPE(_bdb1_tmp_) != T_STRING) {				\
- 	    rb_raise(rb_eTypeError, "dump() must return String");	\
- 	}								\
-    }									\
-    else {								\
-        _bdb1_tmp_ = rb_obj_as_string(_bdb1_tmp_);			\
-        if (a == Qnil)							\
-            _bdb1_is_nil = 1;						\
-        else if (dbst->filter[type_kv]) {				\
-            a = rb_obj_as_string(a);					\
-        }								\
-        else								\
-            a = _bdb1_tmp_;						\
-    }									\
-    (key).data = ALLOCA_N(char,						\
-			  RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil + 1);	\
-    MEMCPY((key).data, RSTRING(_bdb1_tmp_)->ptr, char,			\
-			  RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil + 1);	\
-    key.size = RSTRING(_bdb1_tmp_)->len + _bdb1_is_nil;			\
-}
-
 #define GetDB(obj, dbst)						\
 {									\
     Data_Get_Struct(obj, bdb1_DB, dbst);				\
@@ -153,23 +109,9 @@ extern VALUE bdb1_deleg_to_orig _((VALUE));
 
 #define free_key(dbst, key)
 
-#define test_recno(obj, key, recno, a)		\
-{						\
-    bdb1_DB *dbst;				\
-    Data_Get_Struct(obj, bdb1_DB, dbst);	\
-    if (dbst->type == DB_RECNO) {		\
-        recno = NUM2INT(a) + dbst->array_base;	\
-        key.data = &recno;			\
-        key.size = sizeof(db_recno_t);		\
-    }						\
-    else {					\
-        test_dump(obj, key, a, FILTER_KEY);	\
-    }						\
-}
-
 extern void bdb1_deleg_mark _((struct deleg_class *));
 extern void bdb1_deleg_free _((struct deleg_class *));
-extern VALUE bdb1_s_new _((int, VALUE *, VALUE));
+extern VALUE bdb1_init _((int, VALUE *, VALUE));
 extern VALUE bdb1_put _((int, VALUE *, VALUE));
 extern VALUE bdb1_get _((int, VALUE *, VALUE));
 extern VALUE bdb1_del _((VALUE, VALUE));
@@ -183,7 +125,7 @@ extern VALUE bdb1_has_value _((VALUE, VALUE));
 extern VALUE bdb1_internal_value _((VALUE, VALUE, VALUE, int));
 extern VALUE bdb1_to_type _((VALUE, VALUE, VALUE));
 extern VALUE bdb1_clear _((VALUE));
-extern VALUE bdb1_each_vc _((VALUE, int));
+extern VALUE bdb1_each_vc _((VALUE, int, int));
 extern void bdb1_init_delegator _((void));
 extern void bdb1_init_recnum _((void));
 

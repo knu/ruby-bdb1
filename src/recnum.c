@@ -3,7 +3,7 @@
 static ID id_cmp;
 
 static VALUE
-bdb1_recnum_s_new(argc, argv, obj)
+bdb1_recnum_init(argc, argv, obj)
     int argc;
     VALUE *argv, obj;
 {
@@ -22,7 +22,7 @@ bdb1_recnum_s_new(argc, argv, obj)
     if (rb_hash_aref(argv[argc - 1], sarray) != RHASH(argv[argc - 1])->ifnone) {
 	rb_hash_aset(argv[argc - 1], sarray, INT2FIX(0));
     }
-    return bdb1_s_new(argc, argv, obj);
+    return bdb1_init(argc, argv, obj);
 } 
 
 static VALUE
@@ -262,6 +262,36 @@ bdb1_sary_aset(argc, argv, obj)
     return argv[1];
 }
 
+#if RUBY_VERSION_CODE >= 172
+
+static VALUE
+bdb1_sary_insert(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    long pos;
+
+    if (argc < 2) {
+	rb_raise(rb_eArgError, "wrong number of arguments(at least 2)");
+    }
+    pos = NUM2LONG(argv[0]);
+    if (pos == -1) {
+	bdb1_DB *dbst;
+
+	GetDB(obj, dbst);
+ 	pos = dbst->len;
+    }
+    else if (pos < 0) {
+	pos++;
+    }
+
+    bdb1_sary_replace(obj, pos, 0, rb_ary_new4(argc-1, argv+1));
+    return obj;
+}
+
+#endif
+
 static VALUE
 bdb1_sary_at(obj, pos)
     VALUE obj, pos;
@@ -458,20 +488,6 @@ bdb1_sary_rindex(obj, a)
 }
 
 static VALUE
-bdb1_sary_indexes(argc, argv, obj)
-    int argc;
-    VALUE obj, *argv;
-{
-    VALUE indexes;
-    int i;
-    indexes = rb_ary_new2(argc);
-    for (i = 0; i < argc; i++) {
-	rb_ary_push(indexes, bdb1_sary_entry(obj, argv[i]));
-    }
-    return indexes;
-}
-
-static VALUE
 bdb1_sary_to_a(obj)
     VALUE obj;
 {
@@ -516,7 +532,7 @@ static VALUE
 bdb1_sary_collect_bang(obj)
     VALUE obj;
 {
-    return bdb1_each_vc(obj, Qtrue);
+    return bdb1_each_vc(obj, Qtrue, Qfalse);
 }
 
 static VALUE
@@ -526,7 +542,43 @@ bdb1_sary_collect(obj)
     if (!rb_block_given_p()) {
 	return bdb1_sary_to_a(obj);
     }
-    return bdb1_each_vc(obj, Qfalse);
+    return bdb1_each_vc(obj, Qfalse, Qfalse);
+}
+
+static VALUE
+bdb1_sary_select(argc, argv, obj)
+    int argc;
+    VALUE *argv, obj;
+{
+    VALUE result;
+    long i;
+
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
+	}
+	return bdb1_each_vc(obj, Qfalse, Qtrue);
+    }
+    result = rb_ary_new();
+    for (i = 0; i < argc; i++) {
+	rb_ary_push(result, bdb1_sary_fetch(1, argv + i, obj));
+    }
+    return result;
+}
+
+static VALUE
+bdb1_sary_indexes(argc, argv, obj)
+    int argc;
+    VALUE obj, *argv;
+{
+    VALUE indexes;
+    int i;
+
+#if RUBY_VERSION_CODE >= 172
+    rb_warn("Recnum#%s is deprecated; use Recnum#select",
+	    rb_id2name(rb_frame_last_func()));
+#endif
+    return bdb1_sary_select(argc, argv, obj);
 }
 
 static VALUE
@@ -871,9 +923,7 @@ void bdb1_init_recnum()
     id_cmp = rb_intern("<=>");
     bdb1_cRecnum = rb_define_class_under(bdb1_mDb, "Recnum", bdb1_cCommon);
     rb_const_set(bdb1_mDb, rb_intern("Recno"), bdb1_cRecnum);
-    rb_define_singleton_method(bdb1_cRecnum, "new", bdb1_recnum_s_new, -1);
-    rb_define_singleton_method(bdb1_cRecnum, "create", bdb1_recnum_s_new, -1);
-    rb_define_singleton_method(bdb1_cRecnum, "open", bdb1_recnum_s_new, -1);
+    rb_define_private_method(bdb1_cRecnum, "initialize", bdb1_recnum_init, -1);
     rb_define_method(bdb1_cRecnum, "[]", bdb1_sary_aref, -1);
     rb_define_method(bdb1_cRecnum, "[]=", bdb1_sary_aset, -1);
     rb_define_method(bdb1_cRecnum, "at", bdb1_sary_at, 1);
@@ -886,6 +936,9 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "pop", bdb1_sary_pop, 0);
     rb_define_method(bdb1_cRecnum, "shift", bdb1_sary_shift, 0);
     rb_define_method(bdb1_cRecnum, "unshift", bdb1_sary_unshift_m, -1);
+#if RUBY_VERSION_CODE >= 172
+    rb_define_method(bdb1_cRecnum, "insert", bdb1_sary_insert, -1);
+#endif
     rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, 0);
     rb_define_method(bdb1_cRecnum, "each_index", bdb1_sary_each_index, 0);
     rb_define_method(bdb1_cRecnum, "reverse_each", bdb1_each_eulav, 0);
@@ -900,6 +953,10 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "reverse!", bdb1_sary_reverse_bang, 0);
     rb_define_method(bdb1_cRecnum, "collect", bdb1_sary_collect, 0);
     rb_define_method(bdb1_cRecnum, "collect!", bdb1_sary_collect_bang, 0);
+#if RUBY_VERSION_CODE >= 172
+    rb_define_method(bdb1_cRecnum, "map", bdb1_sary_collect, 0);
+    rb_define_method(bdb1_cRecnum, "select", bdb1_sary_select, -1);
+#endif
     rb_define_method(bdb1_cRecnum, "map!", bdb1_sary_collect_bang, 0);
     rb_define_method(bdb1_cRecnum, "filter", bdb1_sary_filter, 0);
     rb_define_method(bdb1_cRecnum, "delete", bdb1_sary_delete, 1);

@@ -1,4 +1,4 @@
-#!/usr/bin/ruby
+#!/usr/bin/ruby -I../src
 require 'bdb1'
 module ZeroC
    def bdb1_fetch_value(a)

@@ -25,3 +25,10 @@
 
 * tests for RUNIT/Test::Unit
 * filter function like P language (bdb1_{store,fetch}_{key,value})
+
+-- 0.1.7
+
+* stupid problem with the GC
+* switch on model allocate/initialize
+* ::open == ::new + block
+* 1.7.2 Recnum#map, #insert

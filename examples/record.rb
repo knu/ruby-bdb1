@@ -5,7 +5,7 @@ module BDB1
    class Bcomp < Btree
       extend Marshal
 
-      def bdb_bt_compare(a, b)
+      def bdb1_bt_compare(a, b)
 	 a <=> b
       end
    end
@@ -21,7 +21,7 @@ hash1 = BDB1::Bcomp.create('tmp/hash1.bdb', "w", 0644,
 f1 = 'aaaa'
 f2 = 'lmno'
 f3 = 'rrrr'
-100.times do |i|
+10000.times do |i|
    rec1 = record1Class.new
    rec1.f1 = f1 = f1.succ
    rec1.f2 = f2 = f2.succ
