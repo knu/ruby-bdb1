@@ -1,6 +1,14 @@
 #include <ruby.h>
 #include <version.h>
 
+#if RUBY_VERSION_CODE < 180
+#define StringValue(x,y) do {				\
+    if (TYPE(x) != T_STRING) x = rb_str_to_str(x);	\
+} while(0)
+#define StringValuePtr(x) STR2CSTR(x)
+#define SafeStringValue(x) Check_SafeStr(x)
+#endif
+
 #ifdef COMPAT185
 #include <db_185.h>
 #else
@@ -18,13 +26,15 @@
 #define DB_VERSION_MINOR -1
 #define DB_RELEASE_PATCH -1
 
-#define BDB1_MARSHAL 1
-#define BDB1_TXN 2
-#define BDB1_RE_SOURCE 4
-#define BDB1_BT_COMPARE 8
-#define BDB1_BT_PREFIX  16
-#define BDB1_DUP_COMPARE 32
-#define BDB1_H_HASH 64
+#define BDB1_MARSHAL     (1<<0)
+#define BDB1_TXN         (1<<1)
+#define BDB1_RE_SOURCE   (1<<2)
+#define BDB1_BT_COMPARE  (1<<3)
+#define BDB1_BT_PREFIX   (1<<4)
+#define BDB1_DUP_COMPARE (1<<5)
+#define BDB1_H_HASH      (1<<6)
+#define BDB1_NOT_OPEN    (1<<7)
+
 #define BDB1_FUNCTION (BDB1_BT_COMPARE|BDB1_BT_PREFIX|BDB1_DUP_COMPARE|BDB1_H_HASH)
 
 #define DB_SET_RANGE    R_CURSOR

@@ -40,3 +40,8 @@
 * corrected set_fetch_value
 * new return value for []= (1.8.0)
 * adapted for 1.8.0
+
+--- 0.1.9
+
+* adapted for 1.8 (minor modifications)
+

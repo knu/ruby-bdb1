@@ -40,7 +40,7 @@ bdb1_test_error(comm)
         error = bdb1_eFatal;
         if (bdb1_errcall) {
             bdb1_errcall = 0;
-            rb_raise(error, "%s -- %s", RSTRING(bdb1_errstr)->ptr, db_strerror(comm));
+            rb_raise(error, "%s -- %s", StringValuePtr(bdb1_errstr), db_strerror(comm));
         }
         else
             rb_raise(error, "%s", db_strerror(errno));
@@ -82,7 +82,7 @@ test_dump(obj, key, a, type_kv)
         if (a == Qnil)
             is_nil = 1;
     }
-    key->data = RSTRING(tmp)->ptr;
+    key->data = StringValuePtr(tmp);
     key->size = RSTRING(tmp)->len + is_nil;
     return tmp;
 }
@@ -97,14 +97,10 @@ test_ret(obj, tmp, a, type_kv)
     if (dbst->marshal || a == Qnil) {
 	return a;
     }
-    else {
-        if (dbst->filter[type_kv]) {
-            return rb_obj_as_string(a);
-        }
-        else {
-	    return tmp;
-	}
+    if (dbst->filter[type_kv]) {
+	return rb_obj_as_string(a);
     }
+    return tmp;
 }
 
 static VALUE
@@ -122,9 +118,7 @@ test_recno(obj, key, recno, a)
         key->size = sizeof(db_recno_t);
 	return a;
     }
-    else {
-        return test_dump(obj, key, a, FILTER_KEY);
-    }
+    return test_dump(obj, key, a, FILTER_KEY);
 }
 
 VALUE
@@ -264,13 +258,21 @@ bdb1_h_hash(bytes, length)
 }
 
 static void
+bdb1_i_close(dbst)
+    bdb1_DB *dbst;
+{
+    if (dbst->dbp != NULL && !(dbst->options & BDB1_NOT_OPEN)) {
+	dbst->options |= BDB1_NOT_OPEN;
+	bdb1_test_error(dbst->dbp->close(dbst->dbp));
+    }
+    dbst->dbp = NULL;
+}
+
+static void
 bdb1_free(dbst)
     bdb1_DB *dbst;
 {
-    if (dbst->dbp) {
-        bdb1_test_error(dbst->dbp->close(dbst->dbp));
-        dbst->dbp = NULL;
-    }
+    bdb1_i_close(dbst);
     free(dbst);
 }
 
@@ -279,12 +281,13 @@ bdb1_mark(dbst)
     bdb1_DB *dbst;
 {
     int i;
-    if (dbst->marshal) rb_gc_mark(dbst->marshal);
-    if (dbst->bt_compare) rb_gc_mark(dbst->bt_compare);
-    if (dbst->bt_prefix) rb_gc_mark(dbst->bt_prefix);
-    if (dbst->h_hash) rb_gc_mark(dbst->h_hash);
+
+    rb_gc_mark(dbst->marshal);
+    rb_gc_mark(dbst->bt_compare);
+    rb_gc_mark(dbst->bt_prefix);
+    rb_gc_mark(dbst->h_hash);
     for (i = 0; i < 4; i++) {
-	if (dbst->filter[i]) rb_gc_mark(dbst->filter[i]);
+	rb_gc_mark(dbst->filter[i]);
     }
 }
 
@@ -300,7 +303,7 @@ bdb1_i185_btree(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = RSTRING(key)->ptr;
+    options = StringValuePtr(key);
     if (strcmp(options, "set_flags") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.bi.flags = NUM2INT(value);
@@ -354,7 +357,7 @@ bdb1_i185_hash(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = RSTRING(key)->ptr;
+    options = StringValuePtr(key);
     if (strcmp(options, "set_h_ffactor") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.hi.ffactor = NUM2INT(value);
@@ -389,13 +392,13 @@ bdb1_i185_recno(obj, dbstobj)
 {
     VALUE key, value;
     bdb1_DB *dbst;
-    char *options;
+    char *options, *str;
 
     Data_Get_Struct(dbstobj, bdb1_DB, dbst);
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = RSTRING(key)->ptr;
+    options = StringValuePtr(key);
     if (strcmp(options, "set_flags") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.ri.flags = NUM2INT(value);
@@ -403,7 +406,8 @@ bdb1_i185_recno(obj, dbstobj)
     else if (strcmp(options, "set_re_delim") == 0) {
 	int ch;
 	if (TYPE(value) == T_STRING) {
-	    dbst->info.ri.bval = RSTRING(value)->ptr[0];
+	    str = StringValuePtr(value);
+	    dbst->info.ri.bval = str[0];
 	}
 	else {
 	    dbst->info.ri.bval = NUM2INT(value);
@@ -419,7 +423,8 @@ bdb1_i185_recno(obj, dbstobj)
     else if (strcmp(options, "set_re_pad") == 0) {
 	int ch;
 	if (TYPE(value) == T_STRING) {
-	    dbst->info.ri.bval = RSTRING(value)->ptr[0];
+	    str = StringValuePtr(value);
+	    dbst->info.ri.bval = str[0];
 	}
 	else {
 	    dbst->info.ri.bval = NUM2INT(value);
@@ -463,7 +468,7 @@ bdb1_i185_common(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = RSTRING(key)->ptr;
+    options = StringValuePtr(key);
     if (strcmp(options, "marshal") == 0) {
         switch (value) {
         case Qtrue: 
@@ -553,29 +558,34 @@ bdb1_init(argc, argv, obj)
 	/* ... */
     case 2:
 	if (TYPE(c) == T_STRING) {
-	    if (strcmp(RSTRING(c)->ptr, "r") == 0)
+	    char *m = StringValuePtr(c);
+	    if (strcmp(m, "r") == 0) {
 		oflags = DB_RDONLY;
-	    else if (strcmp(RSTRING(c)->ptr, "r+") == 0)
+	    }
+	    else if (strcmp(m, "r+") == 0) {
 		oflags = DB_WRITE;
-	    else if (strcmp(RSTRING(c)->ptr, "w") == 0 ||
-		     strcmp(RSTRING(c)->ptr, "w+") == 0)
+	    }
+	    else if (strcmp(m, "w") == 0 || strcmp(m, "w+") == 0) {
 		oflags = DB_CREATE | DB_TRUNCATE | DB_WRITE;
-	    else if (strcmp(RSTRING(c)->ptr, "a") == 0 ||
-		     strcmp(RSTRING(c)->ptr, "a+") == 0)
+	    }
+	    else if (strcmp(m, "a") == 0 || strcmp(m, "a+") == 0) {
 		oflags = DB_CREATE | DB_WRITE;
+	    }
 	    else {
 		rb_raise(bdb1_eFatal, "flags must be r, r+, w, w+, a or a+");
 	    }
 	}
-	else if (c == Qnil)
+	else if (c == Qnil) {
 	    oflags = DB_RDONLY;
-	else
+	}
+	else {
 	    oflags = NUM2INT(c);
+	}
 	/* ... */
     case 1:
 	if (!NIL_P(b)) {
-	    Check_SafeStr(b);
-	    name = RSTRING(b)->ptr;
+	    SafeStringValue(b);
+	    name = StringValuePtr(b);
 	}
 	else {
 	    name = NULL;
@@ -593,14 +603,12 @@ bdb1_init(argc, argv, obj)
 	switch(dbst->type) {
 	case 0:
 	    rb_iterate(rb_each, f, bdb1_i185_btree, obj);
-	    if (dbst->bt_compare == 0 && 
-		rb_respond_to(obj, id_bt_compare) == Qtrue) {
+	    if (dbst->bt_compare == 0 && rb_respond_to(obj, id_bt_compare)) {
 		dbst->has_info = Qtrue;
 		dbst->options |= BDB1_BT_COMPARE;
 		dbst->info.bi.compare = bdb1_bt_compare;
 	    }
-	    if (dbst->bt_prefix == 0 && 
-		rb_respond_to(obj, id_bt_prefix) == Qtrue) {
+	    if (dbst->bt_prefix == 0 && rb_respond_to(obj, id_bt_prefix)) {
 		dbst->has_info = Qtrue;
 		dbst->options |= BDB1_BT_PREFIX;
 		dbst->info.bi.prefix = bdb1_bt_prefix;
@@ -608,8 +616,7 @@ bdb1_init(argc, argv, obj)
 	    break;
 	case 1:
 	    rb_iterate(rb_each, f, bdb1_i185_hash, obj);
-	    if (dbst->h_hash == 0 && 
-		rb_respond_to(obj, id_h_hash) == Qtrue) {
+	    if (dbst->h_hash == 0 && rb_respond_to(obj, id_h_hash)) {
 		dbst->has_info = Qtrue;
 		dbst->options |= BDB1_H_HASH;
 		dbst->info.hi.hash = bdb1_h_hash;
@@ -626,6 +633,7 @@ bdb1_init(argc, argv, obj)
 			     (void *)dbst->has_info?&dbst->info:NULL)) == NULL) {
 	rb_raise(bdb1_eFatal, "Failed `%s'", db_strerror(errno));
     }
+    dbst->options &= ~BDB1_NOT_OPEN;
     if (dbst->type == 2) {
 	dbst->len = bdb1_hard_count(dbst->dbp);
     }
@@ -639,13 +647,11 @@ bdb1_close(obj)
     VALUE opt;
     bdb1_DB *dbst;
 
-    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
+    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close the database");
-    Data_Get_Struct(obj, bdb1_DB, dbst);
-    if (dbst->dbp != NULL) {
-	bdb1_test_error(dbst->dbp->close(dbst->dbp));
-	dbst->dbp = NULL;
     }
+    Data_Get_Struct(obj, bdb1_DB, dbst);
+    bdb1_i_close(dbst);
     return Qnil;
 }
 
@@ -657,6 +663,7 @@ bdb1_s_alloc(obj)
     VALUE res, cl;
 
     res = Data_Make_Struct(obj, bdb1_DB, bdb1_mark, bdb1_free, dbst);
+    dbst->options |= BDB1_NOT_OPEN;
     cl = obj;
     while (cl) {
 	if (cl == bdb1_cBtree || RCLASS(cl)->m_tbl == RCLASS(bdb1_cBtree)->m_tbl) {
@@ -676,8 +683,7 @@ bdb1_s_alloc(obj)
     if (!cl) {
 	rb_raise(bdb1_eFatal, "unknown database type");
     }
-    if (rb_respond_to(obj, id_load) == Qtrue &&
-	rb_respond_to(obj, id_dump) == Qtrue) {
+    if (rb_respond_to(obj, id_load) && rb_respond_to(obj, id_dump)) {
 	dbst->marshal = obj;
 	dbst->options |= BDB1_MARSHAL;
     }
@@ -702,7 +708,9 @@ bdb1_s_new(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE res = rb_funcall2(obj, rb_intern("allocate"), 0, 0);
+    VALUE st, res;
+
+    res = rb_funcall2(obj, rb_intern("allocate"), 0, 0);
     rb_obj_call_init(res, argc, argv);
     return res;
 }
@@ -1577,8 +1585,8 @@ Init_bdb1()
     rb_define_alloc_func(bdb1_cCommon, bdb1_s_alloc);
 #else
     rb_define_singleton_method(bdb1_cCommon, "allocate", bdb1_s_alloc, 0);
-    rb_define_singleton_method(bdb1_cCommon, "new", bdb1_s_new, -1);
 #endif
+    rb_define_singleton_method(bdb1_cCommon, "new", bdb1_s_new, -1);
     rb_define_singleton_method(bdb1_cCommon, "create", bdb1_s_new, -1);
     rb_define_singleton_method(bdb1_cCommon, "open", bdb1_s_open, -1);
     rb_define_singleton_method(bdb1_cCommon, "[]", bdb1_s_create, -1);

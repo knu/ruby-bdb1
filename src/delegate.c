@@ -162,7 +162,7 @@ void bdb1_init_delegator()
 
 	ary = rb_class_instance_methods(0, 0, rb_mKernel);
 	for (i = 0; i < RARRAY(ary)->len; i++) {
-	    method = RSTRING(RARRAY(ary)->ptr[i])->ptr;
+	    method = StringValuePtr(RARRAY(ary)->ptr[i]);
 	    if (!strcmp(method, "==") ||
 		!strcmp(method, "===") || !strcmp(method, "=~")) continue;
 	    rb_undef_method(bdb1_cDelegate, method);
