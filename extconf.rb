@@ -1,33 +1,63 @@
 #!/usr/bin/ruby
 require 'mkmf'
-if prefix = with_config("db-prefix")
-    $CFLAGS += " -I#{prefix}/include"
-    $LDFLAGS += " -L#{prefix}/lib"
+
+def rule(target, clean = nil)
+   wr = "#{target}:
+\t@for subdir in $(SUBDIRS); do \\
+\t\t(cd $${subdir} && $(MAKE) #{target}); \\
+\tdone;
+"
+   if clean != nil
+      wr << "\t@-rm tmp/* tests/tmp/* 2> /dev/null\n"
+      wr << "\t@rm Makefile\n" if clean
+   end
+   wr
 end
-$CFLAGS += " -DBDB_NO_THREAD" if with_config("no-thread")
-$CFLAGS += " -I#{incdir}" if incdir = with_config("db-include-dir")
-$LDFLAGS += " -I#{libdir}" if libdir = with_config("db-lib-dir")
-if ! have_library("db", "__hash_open") 
-    raise "libdb.a not found"
+
+subdirs = Dir["*"].select do |subdir|
+   File.file?(subdir + "/extconf.rb")
 end
-create_makefile("bdb1")
+
 begin
-   make = open("Makefile", "a")
+   make = open("Makefile", "w")
+   make.print <<-EOF
+SUBDIRS = #{subdirs.join(' ')}
+
+#{rule('all')}
+#{rule('clean', false)}
+#{rule('distclean', true)}
+#{rule('realclean', true)}
+#{rule('install')}
+#{rule('site-install')}
+#{rule('unknown')}
+%.html: %.rd
+\trd2 $< > ${<:%.rd=%.html}
+
+   EOF
+   make.print "HTML = bdb1.html"
+   Dir.foreach('docs') do |x|
+      make.print " \\\n\tdocs/#{x}" if x.sub!(/\.rd$/, ".html")
+   end
+   make.puts
    make.print <<-EOF
 
-unknown: $(DLLIB)
-\t@echo "main() {}" > /tmp/a.c
-\t$(CC) -static /tmp/a.c $(OBJS) $(CPPFLAGS) $(DLDFLAGS) -lruby #{CONFIG["LIBS"
-]} $(LIBS) $(LOCAL_LIBS)
-\t@-rm /tmp/a.c a.out
+html: $(HTML)
 
 test: $(DLLIB)
    EOF
    Dir.foreach('tests') do |x|
       next if /^\./ =~ x || /(_\.rb|~)$/ =~ x
       next if FileTest.directory?(x)
-      make.print "	ruby tests/#{x}\n"
+      make.print "\truby tests/#{x}\n"
    end
 ensure
    make.close
+end
+
+subdirs.each do |subdir|
+   STDERR.puts("#{$0}: Entering directory `#{subdir}'")
+   Dir.chdir(subdir)
+   system("#{Config::CONFIG['RUBY_INSTALL_NAME']} extconf.rb " + ARGV.join(" "))
+   Dir.chdir("..")
+   STDERR.puts("#{$0}: Leaving directory `#{subdir}'")
 end

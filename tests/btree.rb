@@ -1,5 +1,5 @@
 #!/usr/bin/ruby
-$LOAD_PATH.unshift *%w{.. . tests}
+$LOAD_PATH.unshift *%w{../src ./src tests}
 require 'bdb1'
 require 'runit_'
 
@@ -44,6 +44,9 @@ class TestBtree < RUNIT::TestCase
       assert_equal(false, $bdb.value?("unknown"), "<has unknown value>")
       assert_equal(false, $bdb.put("alpha", "gamma", BDB1::NOOVERWRITE), "<nooverwrite>")
       assert_equal("alpha", $bdb["alpha"], "<must not be changed>")
+      assert($bdb.both?("alpha", "alpha"), "<has both>")
+      assert(! $bdb.both?("alpha", "beta"), "<don't has both>")
+      assert(! $bdb.both?("unknown", "alpha"), "<don't has both>")
       assert_equal([1, 2, 3].to_s, $bdb["array"] = [1, 2, 3], "<array>")
       assert_equal([1, 2, 3].to_s, $bdb["array"], "<retrieve array>")
       assert_equal({"a" => "b"}.to_s, $bdb["hash"] = {"a" => "b"}, "<hash>")
