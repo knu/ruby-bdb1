@@ -21,6 +21,7 @@ class TestBtree < RUNIT::TestCase
       assert_error(BDB1::Fatal, 'BDB1::Btree.new(".", "a")', "invalid name")
       assert_error(BDB1::Fatal, 'BDB1::Btree.open("tmp/aa", "env" => 1)', "invalid Env")
    end
+
    def test_01_init
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.new("tmp/aa", "a", "marshal" => Marshal), "<open>")
    end
@@ -42,6 +43,7 @@ class TestBtree < RUNIT::TestCase
       assert_equal({"a" => "b"}, $bdb["hash"].to_orig, "<retrieve hash>")
       assert($bdb.sync, "<sync>")
    end
+
    def test_03_delete
       size = $bdb.size
       i = 0
@@ -52,6 +54,7 @@ class TestBtree < RUNIT::TestCase
       assert(size == i, "<delete count>")
       assert_equal(0, $bdb.size, "<empty>")
    end
+
    def test_04_cursor
       cat = Struct.new("Cat", :name, :age, :life)
       array = ["abc", [1, 3], {"aa" => 12}, [2, {"bb" => "cc"}, 4],
@@ -67,6 +70,7 @@ class TestBtree < RUNIT::TestCase
 	 assert(array.index(x) != nil)
       end
    end
+
    def test_05_reopen
       assert_equal(nil, $bdb.close, "<close>")
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open("tmp/aa", "w", 
@@ -74,6 +78,7 @@ class TestBtree < RUNIT::TestCase
         "<reopen with DB_DUP>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
+
    def test_06_dup
       array = [[[0, "a"], [1, "b"], [2, "c"], [3, "d"]],
 	 [{"aa" => 0}, {"bb" => 1}, {"cc" => 2}],
@@ -87,11 +92,13 @@ class TestBtree < RUNIT::TestCase
 	 ind += 1
       end
    end
+
    def test_07_in_memory
       assert_equal(nil, $bdb.close, "<close>")
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open("marshal" => Marshal), "<open in memory>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
+
    def test_08_in_memory_get_set
       assert_equal([1, 2, [3, 4]], $bdb["array"] = [1, 2, [3, 4]], "<set in memory>")
       assert_equal([1, 2, [3, 4]], $bdb["array"].to_orig, "<get in memory>")
@@ -101,6 +108,7 @@ class TestBtree < RUNIT::TestCase
       assert_equal("cc", $bdb["bb"].to_orig, "<get in memory>")
       assert_equal(nil, $bdb.close, "<close>")
    end
+
    def test_09_modify
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open("tmp/aa", "w",
 							"marshal" => Marshal),

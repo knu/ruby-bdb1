@@ -53,6 +53,7 @@ class TestHash < RUNIT::TestCase
       assert_equal({"a" => "b"}.to_s, $bdb["hash"], "<retrieve hash>")
       assert($bdb.sync, "<sync>")
    end
+
    def test_03_delete
       size = $bdb.size
       i, arr = 0, []
@@ -66,6 +67,7 @@ class TestHash < RUNIT::TestCase
       assert(size == i, "<delete count>")
       assert_equal(0, $bdb.size, "<empty>")
    end
+
    def test_04_cursor
       array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
       array.each do |x|
@@ -79,39 +81,24 @@ class TestHash < RUNIT::TestCase
       assert_equal(array, arr.sort, "<order>")
       arr = []
    end
-   def test_05_reopen
-      assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB1::Hash, $bdb = BDB1::Hash.open("tmp/aa", "w", 
-	"set_flags" => BDB1::DUP,
-	"set_dup_compare" => lambda {|a, b| a <=> b}), 
-        "<reopen with DB_DUP>")
-      assert_equal(0, $bdb.size, "<must be 0 after reopen>")
-   end
-   def test_06_dup
-      assert_equal("a", $bdb["0"] = "a", "<set dup>")
-      assert_equal("b", $bdb["0"] = "b", "<set dup>")
-      assert_equal("c", $bdb["0"] = "c", "<set dup>")
-      assert_equal("d", $bdb["0"] = "d", "<set dup>")
-      assert_equal("aa", $bdb["1"] = "aa", "<set dup>")
-      assert_equal("bb", $bdb["1"] = "bb", "<set dup>")
-      assert_equal("cc", $bdb["1"] = "cc", "<set dup>")
-      assert_equal("aaa", $bdb["2"] = "aaa", "<set dup>")
-      assert_equal("bbb", $bdb["2"] = "bbb", "<set dup>")
-      assert_equal("aaaa", $bdb["3"] = "aaaa", "<set dup>")
-   end
-   def test_07_in_memory
+
+   def test_05_in_memory
       assert_equal(nil, $bdb.close, "<close>")
       assert_kind_of(BDB1::Hash, $bdb = BDB1::Hash.open(nil), "<open in memory>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
-   def test_08_in_memory_get_set
-      assert_equal("aa", $bdb["bb"] = "aa", "<set in memory>")
-      assert_equal("cc", $bdb["bb"] = "cc", "<set in memory>")
-      assert_equal("cc", $bdb["bb"], "<get in memory>")
+
+   def test_06_in_memory_get_set
+      (33 .. 126).each do |i|
+	 key = i.to_s * 5
+	 val = i.to_s * 7
+	 assert_equal(val, $bdb[key] = val, "<set in memory>")
+      end
+      assert_equal(94, $bdb.size, "<length in memory>")
       assert_equal(nil, $bdb.close, "<close>")
    end
 
-   def test_18_index
+   def test_07_index
       assert_kind_of(BDB1::HashRuby, 
 		     $bdb = BDB1::HashRuby.open("tmp/aa", "w", 
 					       "set_pagesize" => 1024,
@@ -136,7 +123,7 @@ class TestHash < RUNIT::TestCase
       assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
    end
 
-   def test_19_convert
+   def test_08_convert
       h = $bdb.to_hash
       h.each do |k, v|
 	 assert_equal(v, $hash[k], "<to_hash>")

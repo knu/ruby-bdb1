@@ -62,7 +62,30 @@ class TestBtree < RUNIT::TestCase
       end
       assert(size == i, "<delete count>")
       assert_equal(0, $bdb.size, "<empty>")
+      $hash = {}
+      (33 .. 126).each do |i|
+	 key = i.to_s * 5
+	 $bdb[key] = i.to_s * 7
+	 $hash[key] = i.to_s * 7
+	 assert_equal($bdb[key], $hash[key], "<set #{key}>")
+      end
+      assert_equal($bdb.size, $hash.size, "<size after load>")
+      $bdb.each do |key, value|
+	 if rand < 0.5
+	    assert_equal($bdb, $bdb.delete(key), "<delete value>")
+	    $hash.delete(key)
+	 end
+      end
+      assert_equal($bdb.size, $hash.size, "<size after load>")
+      $bdb.each do |key, value|
+	 assert_equal($hash[key], value, "<after delete>")
+      end
+      $bdb.each do |key, value|
+	 assert($hash.key?(key), "<key after delete>")
+	 assert_equal($bdb, $bdb.delete(key), "<delete value>")
+      end
    end
+
    def test_04_cursor
       array = ["a", "b", "c", "d", "e", "f", "g", "h", "i"]
       array.each do |x|
@@ -82,15 +105,20 @@ class TestBtree < RUNIT::TestCase
       arr = $bdb.reject {|k, v| k == "e" || v == "i" }
       has = array.reject {|k, v| k == "e" || k == "i" }
       assert_equal(has, arr.keys.sort, "<reject>")
+      $bdb.reject! {|k, v| k == "e" || v == "i" }
+      array.reject! {|k, v| k == "e" || k == "i" }
+      assert_equal(array, $bdb.keys.sort, "<keys after reject>")
+      assert_equal(array, $bdb.values.sort, "<values after reject>")
    end
+
    def test_05_reopen
       assert_equal(nil, $bdb.close, "<close>")
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open("tmp/aa", "w", 
-	"set_flags" => BDB1::DUP,
-	"set_dup_compare" => lambda {|a, b| a <=> b}),
-        "<reopen with DB_DUP>")
+	"set_flags" => BDB1::DUP),
+		     "<reopen with DB_DUP>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
+
    def test_06_dup
       assert_equal("a", $bdb["0"] = "a", "<set dup>")
       assert_equal("b", $bdb["0"] = "b", "<set dup>")
@@ -102,19 +130,35 @@ class TestBtree < RUNIT::TestCase
       assert_equal("aaa", $bdb["2"] = "aaa", "<set dup>")
       assert_equal("bbb", $bdb["2"] = "bbb", "<set dup>")
       assert_equal("aaaa", $bdb["3"] = "aaaa", "<set dup>")
+      rep = [["a", "b", "c", "d"], ['aa', 'bb', 'cc'], ['aaa', 'bbb'], ['aaaa']]
+      for i in [0, 1, 2, 3]
+	 k0, v0 = [], []
+	 $bdb.each_dup(i.to_s) {|k, v| k0 << k; v0 << v}
+	 assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
+	 assert_equal(v0.sort, rep[i], "<dup val #{i}>")
+	 v0 = []
+	 $bdb.each_dup_value(i.to_s) {|v|  v0 << v}
+	 assert_equal(v0.sort, rep[i], "<dup val #{i}>")
+      end
    end
+
    def test_07_in_memory
       assert_equal(nil, $bdb.close, "<close>")
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open, "<open in memory>")
       assert_equal(0, $bdb.size, "<must be 0 after reopen>")
    end
+
    def test_08_in_memory_get_set
-      assert_equal("aa", $bdb["bb"] = "aa", "<set in memory>")
-      assert_equal("cc", $bdb["bb"] = "cc", "<set in memory>")
-      assert_equal("cc", $bdb["bb"], "<get in memory>")
+      (33 .. 126).each do |i|
+	 key = i.to_s * 5
+	 val = i.to_s * 7
+	 assert_equal(val, $bdb[key] = val, "<set in memory>")
+      end
+      assert_equal(94, $bdb.size, "<length in memory>")
       assert_equal(nil, $bdb.close, "<close>")
    end
-   def test_18_btree_delete
+
+   def test_09_btree_delete
       clean
       assert_kind_of(BDB1::BTCompare, 
 		     $bdb = BDB1::BTCompare.open("tmp/aa", "w", 
@@ -138,7 +182,7 @@ class TestBtree < RUNIT::TestCase
       end
    end
 
-   def test_19_index
+   def test_10_index
       lines = $hash.keys
       array = []
       10.times do
@@ -149,7 +193,7 @@ class TestBtree < RUNIT::TestCase
       assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
    end
 
-   def test_20_convert
+   def test_11_convert
       h = $bdb.to_hash
       h.each do |k, v|
 	 assert_equal(v, $hash[k], "<to_hash>")

@@ -3,7 +3,8 @@
 
 ((<Download|URL:ftp://moulon.inra.fr/pub/ruby/>))
 
-This interface if for the version 1.85 and 1.86 of Berkeley DB
+This interface if for the version 1.85 and 1.86 of Berkeley DB (for Berkeley
+version >= 2 see bdb) 
 
 Developers may choose to store data in any of several different
 storage structures to satisfy the requirements of a particular
@@ -26,10 +27,10 @@ includes support for the following access methods:
 
 Acces Methods
    
-    * ((<Hash like interface|URL:docs/hashlike.html>))
+    * ((<Hash like interface|URL:docs/hashlike1.html>))
       these are the common methods for BDB1::Btree, BDB1::Hash
 
-    * ((<Array like interface|URL:docs/arraylike.html>))
+    * ((<Array like interface|URL:docs/arraylike1.html>))
       methods for BDB1::Recnum (same than BDB1::Recno)
 
 =end

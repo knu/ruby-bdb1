@@ -1084,9 +1084,9 @@ bdb1_each_kv(obj, a, result, flag)
 	    memcmp(keys.data, key.data, key.size) != 0) {
 	    return (result == Qnil)?obj:result;
 	}
-	k = test_load_key(dbst, key);
+	k =  bdb1_test_load(dbst, data); 
 	if (RTEST(flag)) {
-	    k = rb_assoc_new(k, bdb1_test_load(dbst, data));
+	    k = rb_assoc_new(test_load_key(dbst, key), k);
 	}
 	if (NIL_P(result)) {
 	    rb_yield(k);
@@ -1116,14 +1116,14 @@ static VALUE
 bdb1_bt_dup(obj, a)
     VALUE a, obj;
 {
-    return bdb1_each_kv(obj, a, Qnil, Qfalse);
+    return bdb1_each_kv(obj, a, Qnil, Qtrue);
 }
 
 static VALUE
 bdb1_bt_dupval(obj, a)
     VALUE a, obj;
 {
-    return bdb1_each_kv(obj, a, Qnil, Qtrue);
+    return bdb1_each_kv(obj, a, Qnil, Qfalse);
 }
 
 static VALUE

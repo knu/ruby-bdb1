@@ -864,9 +864,9 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "pop", bdb1_sary_pop, 0);
     rb_define_method(bdb1_cRecnum, "shift", bdb1_sary_shift, 0);
     rb_define_method(bdb1_cRecnum, "unshift", bdb1_sary_unshift_m, -1);
-    rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, -1);
+    rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, 0);
     rb_define_method(bdb1_cRecnum, "each_index", bdb1_each_key, 0);
-    rb_define_method(bdb1_cRecnum, "reverse_each", bdb1_each_eulav, -1);
+    rb_define_method(bdb1_cRecnum, "reverse_each", bdb1_each_eulav, 0);
     rb_define_method(bdb1_cRecnum, "length", bdb1_sary_length, 0);
     rb_define_alias(bdb1_cRecnum,  "size", "length");
     rb_define_method(bdb1_cRecnum, "empty?", bdb1_sary_empty_p, 0);

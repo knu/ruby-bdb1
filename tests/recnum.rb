@@ -28,10 +28,12 @@ class TestRecnum < RUNIT::TestCase
       assert_error(BDB1::Fatal, 'BDB1::Recnum.new(".", "a")', "invalid name")
       assert_error(BDB1::Fatal, 'BDB1::Recnum.open("tmp/aa", "env" => 1)', "invalid Env")
    end
+
    def test_01_init
       assert_kind_of(BDB1::Recnum, $bdb1 = BDB1::Recnum.new("tmp/aa", "w"), "<open>")
       $array = []
    end
+
    def test_02_get_set
       reinject(99)
       $bdb1.each_index do |i| 
@@ -119,29 +121,29 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.slice!(i), $array.slice!(i), "<#{iter} slice!(#{i})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice!(#{i})  #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do |iter|
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.slice!(-i), $array.slice!(-i), "<slice!(#{-i})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice!(#{-i}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do  |iter|
 	 i = rand($bdb1.size)
 	 j = rand($bdb1.size)
 	 assert_equal($bdb1.slice!(i, j), $array.slice!(i, j), "<slice!(#{i}, #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice!(#{i}, #{j}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do |iter|
 	 i = rand($bdb1.size)
 	 j = i + rand($bdb1.size - i)
 	 assert_equal($bdb1.slice!(-i, j), $array.slice!(-i, j), "<slice!(#{-i}, #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice!(#{-i}, #{j}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end      
-      reinject(20)
+      reinject(60)
       another = 0
       10.times do |iter|
 	 i = rand($bdb1.size)
@@ -156,7 +158,7 @@ class TestRecnum < RUNIT::TestCase
 	 assert_equal($bdb1.slice!(i .. j), $array.slice!(i .. j), "<slice!(#{i} .. #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice! #{iter}>")
 	 another = 0
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       another = 0
       10.times do |iter|
@@ -172,7 +174,7 @@ class TestRecnum < RUNIT::TestCase
 	 assert_equal($bdb1.slice!(-i .. -j), $array.slice!(-i .. -j), "<slice!(#{-i} .. #{-j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after slice! #{iter}>")
 	 another = 0
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       reinject(40) if $bdb1.size < 40
       assert_equal($bdb1.size, $array.size, "<size end slice!>")
@@ -218,13 +220,13 @@ class TestRecnum < RUNIT::TestCase
       100.times do
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.delete(i), $array.delete(i), "<delete #{i}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       assert_equal($bdb1.to_a, $array, "<after delete>")
       100.times do
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.delete_at(i), $array.delete_at(i), "<delete at #{i}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       assert_equal($bdb1.to_a, $array, "<after delete_at>")
       reinject(60) if $bdb1.size < 60
@@ -267,14 +269,14 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.fill(k, i).to_a, $array.fill(k, i), "<#{iter} fill(#{i})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill(#{i})  #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do |iter|
 	 k = rand($bdb1.size).to_s
 	 i = rand($bdb1.size)
 	 assert_equal($bdb1.fill(k, -i).to_a, $array.fill(k, -i), "<fill(#{-i})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill(#{-i}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do  |iter|
 	 k = rand($bdb1.size).to_s
@@ -282,7 +284,7 @@ class TestRecnum < RUNIT::TestCase
 	 j = rand($bdb1.size)
 	 assert_equal($bdb1.fill(k, i, j).to_a, $array.fill(k, i, j), "<fill(#{i}, #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill(#{i}, #{j}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       10.times do |iter|
 	 k = rand($bdb1.size).to_s
@@ -290,9 +292,9 @@ class TestRecnum < RUNIT::TestCase
 	 j = i + rand($bdb1.size - i)
 	 assert_equal($bdb1.fill(k, -i, j).to_a, $array.fill(k, -i, j), "<fill(#{-i}, #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill(#{-i}, #{j}) #{iter}>")
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end      
-      reinject(20)
+      reinject(60)
       another = 0
       10.times do |iter|
 	 k = rand($bdb1.size).to_s
@@ -308,7 +310,7 @@ class TestRecnum < RUNIT::TestCase
 	 assert_equal($bdb1.fill(k, i .. j).to_a, $array.fill(k, i .. j), "<fill(#{i} .. #{j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill #{iter}>")
 	 another = 0
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       another = 0
       10.times do |iter|
@@ -325,7 +327,7 @@ class TestRecnum < RUNIT::TestCase
 	 assert_equal($bdb1.fill(k, -i .. -j).to_a, $array.fill(k, -i .. -j), "<fill(#{-i} .. #{-j})>")
 	 assert_equal($bdb1.size, $array.size, "<size after fill #{iter}>")
 	 another = 0
-	 reinject(20) if $bdb1.size < 20
+	 reinject(60) if $bdb1.size < 20
       end
       reinject(60) if $bdb1.size < 60
       assert_equal($bdb1.size, $array.size, "<size end fill>")
