@@ -45,3 +45,7 @@
 
 * adapted for 1.8 (minor modifications)
 
+--- 0.2.2
+
+* corrected dbst->info (Thanks Matthew Luckie <mjl@luckie.org.nz>)
+* added documentation for ri (make ri-site)

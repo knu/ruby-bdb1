@@ -544,6 +544,7 @@ bdb1_init(argc, argv, obj)
     int mode, oflags;
     char *name;
     bdb1_DB *dbst;
+    void *openinfo = NULL;
 
     f = Qnil; name = NULL;
     mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
@@ -629,8 +630,9 @@ bdb1_init(argc, argv, obj)
 	rb_iterate(rb_each, f, bdb1_i185_common, obj);
     }
     if (name == NULL) oflags = O_CREAT | O_RDWR;
-    if ((dbst->dbp = dbopen(name, oflags, mode, dbst->type, 
-			     (void *)dbst->has_info?&dbst->info:NULL)) == NULL) {
+    if (dbst->has_info) openinfo = &dbst->info;
+    dbst->dbp = dbopen(name, oflags, mode, dbst->type, openinfo);
+    if (dbst->dbp == NULL) {
 	rb_raise(bdb1_eFatal, "Failed `%s'", db_strerror(errno));
     }
     dbst->options &= ~BDB1_NOT_OPEN;
@@ -760,33 +762,6 @@ bdb1_s_open(argc, argv, obj)
 	return rb_ensure(rb_yield, res, bdb1_close, res);
     }
     return res;
-}
-
-static VALUE
-bdb1_append(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
-{
-    bdb1_DB *dbst;
-    DBT key, data;
-    db_recno_t recno;
-    int i;
-    VALUE *a;
-    volatile VALUE b = Qnil;
-
-    rb_secure(4);
-    if (argc < 1)
-	return obj;
-    GetDB(obj, dbst);
-    INIT_RECNO(dbst, key, recno);
-    DATA_ZERO(data);
-    bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, R_LAST));
-    for (i = 0, a = argv; i < argc; i++, a++) {
-	DATA_ZERO(data);
-	b = test_dump(obj, &data, *a, FILTER_VALUE);
-	bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, R_IAFTER));
-    }
-    return obj;
 }
 
 VALUE

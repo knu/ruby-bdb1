@@ -49,13 +49,30 @@ class TestBtree < Inh::TestCase
       assert_raises(BDB1::Fatal, "invalid Env") do
 	 BDB1::Btree.open("tmp/aa", "env" => 1)
       end
+      assert_raises(TypeError) { BDB1::Btree.new("tmp/aa", "set_cachesize" => "a") }
+      assert_raises(TypeError) { BDB1::Btree.new("tmp/aa", "set_pagesize" => "a") }
+      assert_raises(TypeError) { BDB1::Btree.new("tmp/aa", "set_bt_minkey" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_bt_compare" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_bt_prefix" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_fetch_key" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_store_key" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_fetch_value" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Btree.new("tmp/aa", "set_store_value" => "a") }
+      assert_raises(TypeError) { BDB1::Btree.new("tmp/aa", "set_lorder" => "a") }
    end
    def test_01_init
       assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.new("tmp/aa", "a"), "<open>")
    end
    def test_02_get_set
+      assert_equal(true, $bdb.empty?, "<empty>")
       assert_equal("alpha", $bdb["alpha"] = "alpha", "<set value>")
+      assert_equal(false, $bdb.empty?, "<empty>")
       assert_equal("alpha", $bdb["alpha"], "<retrieve value>")
+      assert_equal("alpha", $bdb.fetch("alpha"), "<fetch value>")
+      assert_equal("beta", $bdb.fetch("xxx", "beta"), "<fetch nil>")
+      assert_equal("xxx", $bdb.fetch("xxx") {|x| x}, "<fetch nil>")
+      assert_raises(IndexError) { $bdb.fetch("xxx") }
+      assert_raises(ArgumentError) { $bdb.fetch("xxx", "beta") {} }
       assert_equal(nil, $bdb["gamma"] = nil, "<set nil>")
       assert_equal(nil, $bdb["gamma"], "<retrieve nil>")
       assert($bdb.key?("alpha") == "alpha", "<has key>")
@@ -74,6 +91,7 @@ class TestBtree < Inh::TestCase
       assert_equal({"a" => "b"}.to_s, $bdb["hash"], "<retrieve hash>")
       assert($bdb.sync, "<sync>")
    end
+
    def test_03_delete
       size = $bdb.size
       i = 0
@@ -91,6 +109,19 @@ class TestBtree < Inh::TestCase
 	 assert_equal($bdb[key], $hash[key], "<set #{key}>")
       end
       assert_equal($bdb.size, $hash.size, "<size after load>")
+      if $bdb.respond_to?(:select)
+	 assert_raises(ArgumentError) { $bdb.select("xxx") {}}
+	 assert_equal([], $bdb.select { false }, "<select none>")
+	 assert_equal($hash.values.sort, $bdb.select { true }.sort, "<select all>")
+      end
+      arr0 = []
+      $bdb.each_key {|key| arr0 << key }
+      assert_equal($hash.keys.sort, arr0.sort, "<each key>")
+      arr1 = []
+      $bdb.reverse_each_key {|key| arr1 << key }
+      assert_equal($hash.keys.sort, arr1.sort, "<reverse each key>")
+      assert_equal(arr0, arr1.reverse, "<reverse>")
+      assert_equal($hash.invert, $bdb.invert, "<invert>")
       $bdb.each do |key, value|
 	 if rand < 0.5
 	    assert_equal($bdb, $bdb.delete(key), "<delete value>")
@@ -154,6 +185,10 @@ class TestBtree < Inh::TestCase
       rep = [["a", "b", "c", "d"], ['aa', 'bb', 'cc'], ['aaa', 'bbb'], ['aaaa']]
       for i in [0, 1, 2, 3]
 	 k0, v0 = [], []
+	 $bdb.duplicates(i.to_s).each {|k, v| k0 << k; v0 << v}
+	 assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
+	 assert_equal(v0.sort, rep[i], "<dup val #{i}>")
+	 k0, v0 = [], []
 	 $bdb.each_dup(i.to_s) {|k, v| k0 << k; v0 << v}
 	 assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
 	 assert_equal(v0.sort, rep[i], "<dup val #{i}>")
@@ -179,13 +214,7 @@ class TestBtree < Inh::TestCase
       assert_equal(nil, $bdb.close, "<close>")
    end
 
-   def test_09_btree_delete
-      clean
-      assert_kind_of(BDB1::BTCompare, 
-		     $bdb = BDB1::BTCompare.open("tmp/aa", "w", 
-					       "set_pagesize" => 1024,
-					       "set_cachesize" => 32 * 1024),
-		     "<open>")
+   def intern_btree_delete
       $hash = {}
       File.foreach("examples/wordtest") do |line|
 	 line.chomp!
@@ -203,7 +232,28 @@ class TestBtree < Inh::TestCase
       end
    end
 
-   def test_10_index
+   def test_09_btree_delete
+      clean
+      assert_kind_of(BDB1::BTCompare, 
+		     $bdb = BDB1::BTCompare.open("tmp/aa", "w", 
+					       "set_pagesize" => 1024,
+					       "set_cachesize" => 32 * 1024),
+		     "<open>")
+      intern_btree_delete
+   end
+
+   def test_10_btree_delete
+      clean
+      assert_kind_of(BDB1::Btree, 
+		     $bdb = BDB1::Btree.open("tmp/aa", "w", 
+					     "set_bt_compare" => proc {|a, b| a <=> b},
+					     "set_pagesize" => 1024,
+					     "set_cachesize" => 32 * 1024),
+		     "<open>")
+      intern_btree_delete
+   end
+
+   def test_11_index
       lines = $hash.keys
       array = []
       10.times do
@@ -214,7 +264,7 @@ class TestBtree < Inh::TestCase
       assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
    end
 
-   def test_11_convert
+   def test_12_convert
       h = $bdb.to_hash
       h.each do |k, v|
 	 assert_equal(v, $hash[k], "<to_hash>")
@@ -227,10 +277,8 @@ class TestBtree < Inh::TestCase
       assert_equal(h1.size, h2.size, "<equal>")
    end
 
-   def test_12_sh
+   def intern_sh
       val = 'a' .. 'zz'
-      assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB1::Btree, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
       val.each do |l|
 	 assert_equal(l, $bdb[l] = l, "<store>")
       end
@@ -249,6 +297,52 @@ class TestBtree < Inh::TestCase
       assert_equal(nil, $bdb.close, "<close>")
       clean
    end
+
+   def test_13_sh
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Btree, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
+      intern_sh
+   end
+
+   def test_14_sh_call
+      $bdb= BDB1::Btree.new("tmp/aa", "w", 
+			    "set_store_key" => proc {|a| "xx_" + a },
+			    "set_fetch_key" => proc {|a| a.sub(/^xx_/, '') },
+			    "set_store_value" => proc {|a| "yy_" + a },
+			    "set_fetch_value" => proc {|a| a.sub(/^yy_/, '') })
+      assert_kind_of(BDB1::Btree, $bdb)
+      intern_sh
+   end
+
+
+   def intern_create(opt = true)
+      if opt
+	 assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree[$hash], "<create>")
+      else
+	 aa = $hash.to_a.flatten
+	 assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree[*aa], "<create>")
+      end
+      assert_equal($bdb.size, $hash.size, "<size after load>")
+      if $bdb.respond_to?(:select)
+	 assert_raises(ArgumentError) { $bdb.select("xxx") {}}
+	 assert_equal([], $bdb.select { false }, "<select none>")
+	 assert_equal($hash.values.sort, $bdb.select { true }.sort, "<select all>")
+      end
+      arr0 = []
+      $bdb.each_key {|key| arr0 << key }
+      assert_equal($hash.keys.sort, arr0.sort, "<each key>")
+      arr0 = []
+      $bdb.each_value {|value| arr0 << value }
+      assert_equal($hash.values.sort, arr0.sort, "<each value>")
+      $bdb.close
+      clean
+   end
+
+   def test_15_create
+      intern_create
+      intern_create(false)
+    end
+             
 
 end
 

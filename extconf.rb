@@ -37,15 +37,23 @@ SUBDIRS = #{subdirs.join(' ')}
    make.print "HTML = bdb1.html"
    docs = Dir['docs/*.rd']
    docs.each {|x| make.print " \\\n\t#{x.sub(/\.rd$/, '.html')}" }
-   make.print "\n\nRDOC = bdb1.rd"
+   docs = Dir['docs/*.rb'].sort
+   make.print "\n\nRDOC = "
    docs.each {|x| make.print " \\\n\t#{x}" }
    make.puts
+   docs.map! {|x| x.sub(/\Adocs./, '')}
    make.print <<-EOF
 
 rdoc: docs/doc/index.html
 
 docs/doc/index.html: $(RDOC)
-\t@-(cd docs; #{CONFIG['RUBY_INSTALL_NAME']} b.rb bdb1; rdoc bdb1.rb)
+\t@-(cd docs; rdoc #{docs.join(" ")})
+
+ri:
+\t@-(cd docs; rdoc -r #{docs.join(" ")})
+
+ri-site:
+\t@-(cd docs; rdoc -R #{docs.join(" ")})
 
 rd2: html
 

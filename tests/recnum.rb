@@ -365,9 +365,69 @@ class TestRecnum < Inh::TestCase
       assert_equal($bdb1.size, $array.size, "<size end reopen>")
       assert_equal($bdb1.to_a, $array, "<size end open>")
    end
-       
 
+   def test_16_collect
+      a = $bdb1.collect
+      assert_equal($array, a, "<collect>")
+      a = $array.collect {|k| k + "!"}
+      b = $bdb1.collect {|k| k + "!"}
+      assert_equal(a, b, "<collect>")
+      assert_equal($bdb1.to_a, $array, "<collect bdb>")
+
+      a = $array.collect! {|k| k + "!"}
+      b = $bdb1.collect! {|k| k + "!"}
+      assert_equal(a, b, "<collect!>")
+      assert_equal($bdb1.to_a, $array, "<collect bdb>")
+   end
+
+   def test_17_insert
+      $array.insert(2, "1", "2", "3")
+      $array.insert(-1, "4", "5")
+      $array.insert(-4, "3", "5", "5", "5", "5")
+      $bdb1.insert(2, 1, 2, 3)
+      $bdb1.insert(-1, 4, 5)
+      $bdb1.insert(-4, 3, 5, 5, 5, 5)
+      assert_equal($bdb1.to_a, $array, "<insert bdb>")
+   end
+
+   def test_18_flp
+      assert_equal($array.first, $bdb1.first, "<first>")
+      assert_equal($array.last, $bdb1.last, "<last>")
+      $bdb1.concat($array)
+      $array.concat($array)
+      assert_equal($bdb1.to_a, $array, "<insert bdb>")
+      assert_equal($bdb1, $bdb1 << 12, "<push>")
+      $array << "12"
+      assert_equal($bdb1.to_a, $array, "<insert bdb>")
+      assert_equal($array.pop, $bdb1.pop, "<pop>")
+      $array.unshift("5", "6")
+      $bdb1.unshift(5, 6)
+      assert_equal($bdb1.to_a, $array, "<unshift bdb>")
+      assert_equal($array.shift, $bdb1.shift, "<shift>")
+      assert_equal($bdb1.to_a, $array, "<unshift bdb>")
+      assert_equal(0, $bdb1 <=> $array, "<cmp>")
+   end
+
+   def test_19_cmp
+      assert_kind_of(BDB1::Recnum, bdb1 = BDB1::Recnum.new("tmp/bb", "a"), "<open>")
+      assert_equal(true, bdb1.empty?, "<empty>")
+      assert_nil(bdb1.close, "<close>")
+      assert_kind_of(BDB1::Recnum, bdb1 = BDB1::Recnum[*$array], "<create>")
+      assert_equal(false, bdb1.empty?, "<empty>")
+      assert_equal(0, $bdb1 <=> bdb1, "<=>")
+      bdb1 << 12
+      assert_equal(1, bdb1 <=> $bdb1, "<=>")
+      assert_equal(-1, $bdb1 <=> bdb1, "<=>")
+   end
       
+   def test_20_compact
+      assert_equal($array.compact, $bdb1.compact, "<compact>")
+      $array.compact!
+      $bdb1.compact!
+      assert_equal($bdb1.to_a, $array, "<compact!>")
+   end
+
+
 end
 
 if defined?(RUNIT)

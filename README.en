@@ -28,6 +28,8 @@
 
   make rd2
   make rdoc
+  make ri-site
+  make ri
 
 * Tests : if you have rubyunit
 

@@ -320,7 +320,7 @@ bdb1_sary_last(obj)
 
     GetDB(obj, dbst);
     if (!dbst->len) return Qnil;
-    tmp = INT2NUM(dbst->len);
+    tmp = INT2NUM(dbst->len - 1);
     return bdb1_get(1, &tmp, obj);
 }
 
@@ -809,7 +809,7 @@ bdb1_sary_cmp(obj, obj2)
 	    return tmp;
 	}
     }
-    len = dbst->len - ary?RARRAY(obj2)->len:dbst2->len;
+    len = dbst->len - (ary?RARRAY(obj2)->len:dbst2->len);
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);
     return INT2FIX(-1);
@@ -892,7 +892,7 @@ static VALUE
 bdb1_sary_compact(obj)
     VALUE obj;
 {
-    return rb_funcall(bdb1_sary_to_a(obj), rb_intern("compact!"), 0, 0);
+    return rb_funcall(bdb1_sary_to_a(obj), rb_intern("compact"), 0, 0);
 }
 
 static VALUE

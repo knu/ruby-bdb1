@@ -49,13 +49,29 @@ class TestHash < Inh::TestCase
       assert_raises(BDB1::Fatal, "invalid Env") do
 	 BDB1::Hash.open("tmp/aa", "env" => 1)
       end
+      assert_raises(TypeError) { BDB1::Hash.new("tmp/aa", "set_h_ffactor" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_h_nemem" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_h_hash" => "a") }
+      assert_raises(TypeError) { BDB1::Hash.new("tmp/aa", "set_cachesize" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_fetch_key" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_store_key" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_fetch_value" => "a") }
+      assert_raises(BDB1::Fatal) { BDB1::Hash.new("tmp/aa", "set_store_value" => "a") }
+      assert_raises(TypeError) { BDB1::Hash.new("tmp/aa", "set_lorder" => "a") }
    end
    def test_01_init
       assert_kind_of(BDB1::Hash, $bdb = BDB1::Hash.new("tmp/aa", "a"), "<open>")
    end
    def test_02_get_set
+      assert_equal(true, $bdb.empty?, "<empty>")
       assert_equal("alpha", $bdb["alpha"] = "alpha", "<set value>")
+      assert_equal(false, $bdb.empty?, "<empty>")
       assert_equal("alpha", $bdb["alpha"], "<retrieve value>")
+      assert_equal("alpha", $bdb.fetch("alpha"), "<fetch value>")
+      assert_equal("beta", $bdb.fetch("xxx", "beta"), "<fetch nil>")
+      assert_equal("xxx", $bdb.fetch("xxx") {|x| x}, "<fetch nil>")
+      assert_raises(IndexError) { $bdb.fetch("xxx") }
+      assert_raises(ArgumentError) { $bdb.fetch("xxx", "beta") {} }
       assert_equal(nil, $bdb["gamma"] = nil, "<set nil>")
       assert_equal(nil, $bdb["gamma"], "<retrieve nil>")
       assert($bdb.key?("alpha") == "alpha", "<has key>")
@@ -87,6 +103,26 @@ class TestHash < Inh::TestCase
       end
       assert(size == i, "<delete count>")
       assert_equal(0, $bdb.size, "<empty>")
+      $hash = {}
+      (33 .. 126).each do |i|
+	 key = i.to_s * 5
+	 $bdb[key] = i.to_s * 7
+	 $hash[key] = i.to_s * 7
+	 assert_equal($bdb[key], $hash[key], "<set #{key}>")
+      end
+      assert_equal($bdb.size, $hash.size, "<size after load>")
+      if $bdb.respond_to?(:select)
+	 assert_raises(ArgumentError) { $bdb.select("xxx") {}}
+	 assert_equal([], $bdb.select { false }, "<select none>")
+	 assert_equal($hash.values.sort, $bdb.select { true }.sort, "<select all>")
+      end
+      arr0 = []
+      $bdb.each_key {|key| arr0 << key }
+      assert_equal($hash.keys.sort, arr0.sort, "<each key>")
+      arr0.each do |key|
+	 assert($hash.key?(key), "<key after delete>")
+	 assert_equal($bdb, $bdb.delete(key), "<delete value>")
+      end
    end
 
    def test_04_cursor
@@ -100,7 +136,6 @@ class TestHash < Inh::TestCase
 	 arr << x
       end
       assert_equal(array, arr.sort, "<order>")
-      arr = []
    end
 
    def test_05_in_memory
@@ -172,10 +207,8 @@ class TestHash < Inh::TestCase
       end
    end
 
-   def test_10_sh
+   def intern_sh
       val = 'a' .. 'zz'
-      assert_equal(nil, $bdb.close, "<close>")
-      assert_kind_of(BDB1::Hash, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
       val.each do |l|
 	 assert_equal(l, $bdb[l] = l, "<store>")
       end
@@ -193,6 +226,22 @@ class TestHash < Inh::TestCase
       end
       assert_equal(nil, $bdb.close, "<close>")
       clean
+   end
+
+   def test_10_sh
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Hash, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
+      intern_sh
+   end
+
+   def test_11_sh_call
+      $bdb= BDB1::Hash.new("tmp/aa", "w", 
+			    "set_store_key" => proc {|a| "xx_" + a },
+			    "set_fetch_key" => proc {|a| a.sub(/^xx_/, '') },
+			    "set_store_value" => proc {|a| "yy_" + a },
+			    "set_fetch_value" => proc {|a| a.sub(/^yy_/, '') })
+      assert_kind_of(BDB1::Hash, $bdb)
+      intern_sh
    end
 
 end
