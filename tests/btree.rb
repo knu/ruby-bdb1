@@ -211,11 +211,7 @@ class TestBtree < Inh::TestCase
 	 array.push h
 	 assert_equal($hash.index(h.reverse), $bdb.index(h.reverse), "<index>")
       end
-      if RUBY_VERSION >= "1.7.2"
-	 assert_equal($hash.select(array), $bdb.select(array), "<select>")
-      else
-	 assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
-      end
+      assert_equal($hash.indexes(array), $bdb.indexes(array), "<indexes>")
    end
 
    def test_11_convert

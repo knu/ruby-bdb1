@@ -1414,7 +1414,7 @@ bdb1_indexes(argc, argv, obj)
     int i;
 
 #if RUBY_VERSION_CODE >= 172
-    rb_warn("BDB1#%s is deprecated; use BDB1#select",
+    rb_warn("BDB1#%s is deprecated; use BDB1#values_at",
 	    rb_id2name(rb_frame_last_func()));
 #endif
     indexes = rb_ary_new2(argc);
@@ -1475,6 +1475,20 @@ bdb1_sync(obj)
 #if RUBY_VERSION_CODE >= 172
 
 static VALUE
+bdb1_values_at(argc, argv, obj)
+    int argc;
+    VALUE *argv, obj;
+{
+    VALUE result = rb_ary_new2(argc);
+    long i;
+
+    for (i = 0; i < argc; i++) {
+	rb_ary_push(result, bdb1_get(1, argv + i, obj));
+    }
+    return result;
+}
+
+static VALUE
 bdb1_select(argc, argv, obj)
     int argc;
     VALUE *argv, obj;
@@ -1486,14 +1500,10 @@ bdb1_select(argc, argv, obj)
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
 	}
-	bdb1_each_valuec(obj, DB_NEXT, result);
+	return bdb1_each_valuec(obj, DB_NEXT, result);
     }
-    else {
-	for (i = 0; i < argc; i++) {
-	    rb_ary_push(result, bdb1_get(1, argv + i, obj));
-	}
-    }
-    return result;
+    rb_warn("Common#select(index..) is deprecated; use Common#values_at");
+    return bdb1_values_at(argc, argv, obj);
 }
 
 #endif
@@ -1639,6 +1649,7 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "indices", bdb1_indexes, -1);
 #if RUBY_VERSION_CODE >= 172
     rb_define_method(bdb1_cCommon, "select", bdb1_select, -1);
+    rb_define_method(bdb1_cCommon, "values_at", bdb1_values_at, -1);
 #endif
     bdb1_cBtree = rb_define_class_under(bdb1_mDb, "Btree", bdb1_cCommon);
     rb_define_method(bdb1_cBtree, "duplicates", bdb1_bt_duplicates, -1);

@@ -1,25 +1,20 @@
 #!/usr/bin/ruby
+ARGV.collect! {|x| x.sub(/^--with-db-prefix=/, "--with-db-dir=") }
+
 require 'mkmf'
 
-$stat_lib = if CONFIG.key?("LIBRUBYARG_STATIC")
-	       $LDFLAGS += " -L#{CONFIG['libdir']}"
-	       CONFIG["LIBRUBYARG_STATIC"]
-	    else
-	       "-lruby"
-	    end
-
-if prefix = with_config("db-prefix")
-    $CFLAGS += " -I#{prefix}/include"
-    $LDFLAGS += " -L#{prefix}/lib"
+def resolve(key)
+   name = key.dup
+   true while name.gsub!(/\$\((\w+)\)/) { CONFIG[$1] }
+   name
 end
 
-if incdir = with_config("db-include-dir")
-   $CFLAGS += " -I#{incdir}"
+if ! find_library(resolve(CONFIG["LIBRUBY"]).sub(/^lib(.*)\.\w+\z/, '\\1'), 
+                  "ruby_init", resolve(CONFIG["archdir"]))
+   raise "can't find -lruby"
 end
 
-if libdir = with_config("db-lib-dir")
-   $LDFLAGS += " -L#{libdir}" 
-end
+dir_config("db")
 
 test = enable_config("test")
 unless (!test && (have_func("dbopen") ||
@@ -40,8 +35,7 @@ begin
 
 unknown: $(DLLIB)
 \t@echo "main() {}" > /tmp/a.c
-\t$(CC) -static /tmp/a.c $(OBJS) $(CPPFLAGS) $(DLDFLAGS) #$stat_lib #{CONFIG["LIBS"
-]} $(LIBS) $(LOCAL_LIBS)
+\t$(CC) -static /tmp/a.c $(OBJS) $(CPPFLAGS) $(DLDFLAGS) #$stat_lib #{Config::CONFIG["LIBS"]} $(LIBS) $(LOCAL_LIBS)
 \t@-rm /tmp/a.c a.out
 
 test: $(DLLIB)
