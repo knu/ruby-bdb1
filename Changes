@@ -20,3 +20,8 @@
 * Common#select (1.7.2)
 * corrected Common#fetch
 * corrected tests (assert)
+
+-- 0.1.6
+
+* tests for RUNIT/Test::Unit
+* filter function like P language (bdb1_{store,fetch}_{key,value})

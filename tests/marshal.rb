@@ -11,15 +11,38 @@ def clean
    end
 end
 
+module BDB1
+   class AZ < Btree
+      def bdb1_store_key(a)
+	 "xx_" + a
+      end
+      def bdb1_fetch_key(a)
+	 a.sub(/^xx_/, '')
+      end
+      def bdb1_store_value(a)
+	 "yy_" + a
+      end
+      def bdb1_fetch_value(a)
+	 a.sub(/^yy_/, '')
+      end
+   end
+end
+
 $bdb, $env = nil, nil
 clean
 
 print "\nVERSION of BDB1 is #{BDB1::VERSION}\n"
 
-class TestBtree < RUNIT::TestCase
+Inh = defined?(RUNIT) ? RUNIT : Test::Unit
+
+class TestBtree < Inh::TestCase
    def test_00_error
-      assert_error(BDB1::Fatal, 'BDB1::Btree.new(".", "a")', "invalid name")
-      assert_error(BDB1::Fatal, 'BDB1::Btree.open("tmp/aa", "env" => 1)', "invalid Env")
+      assert_raises(BDB1::Fatal, "invalid name") do
+	 BDB1::Btree.new(".", "a")
+      end
+      assert_raises(BDB1::Fatal, "invalid Env") do
+	 BDB1::Btree.open("tmp/aa", "env" => 1)
+      end
    end
 
    def test_01_init
@@ -125,6 +148,31 @@ class TestBtree < RUNIT::TestCase
       assert_equal(nil, $bdb.close, "<close>")
       clean
    end
+
+   def test_10_sh
+      val = 'a' .. 'zz'
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Btree, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
+      val.each do |l|
+	 assert_equal(l, $bdb[l] = l, "<store>")
+      end
+      $bdb.each do |k, v|
+	 assert_equal(k, v, "<fetch>")
+      end
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Btree, $bdb = BDB1::Btree.open("tmp/aa"), "<sh>")
+      val.each do |l|
+	 assert_equal("yy_#{l}", $bdb["xx_#{l}"], "<fetch value>")
+      end
+      $bdb.each do |k, v|
+	 assert_equal("xx_", k[0, 3], "<fetch key>")
+	 assert_equal("yy_", v[0, 3], "<fetch key>")
+      end
+      assert_equal(nil, $bdb.close, "<close>")
+      clean
+   end
 end
 
-RUNIT::CUI::TestRunner.run(TestBtree.suite)
+if defined?(RUNIT)
+   RUNIT::CUI::TestRunner.run(TestBtree.suite)
+end

@@ -52,10 +52,14 @@ typedef union {
 	RECNOINFO ri;
 } DB_INFO;
 
+#define FILTER_KEY 0
+#define FILTER_VALUE 1
+
 typedef struct {
     int options, len, has_info;
     DBTYPE type;
     VALUE bt_compare, bt_prefix, h_hash;
+    VALUE filter[4];
     DB *dbp;
     u_int32_t flags;
     int array_base;
@@ -78,10 +82,23 @@ struct deleg_class {
 
 extern VALUE bdb1_deleg_to_orig _((VALUE));
 
-#define test_dump(dbst, key, a)						\
+#define test_dump(obj, key, a, type_kv)					\
 {									\
+    bdb1_DB *dbst;							\
     int _bdb1_is_nil = 0;						\
-    VALUE _bdb1_tmp_;							\
+    VALUE _bdb1_tmp_ = a;						\
+    Data_Get_Struct(obj, bdb1_DB, dbst);				\
+    if (dbst->filter[type_kv]) {					\
+	if (FIXNUM_P(dbst->filter[type_kv])) {				\
+	    _bdb1_tmp_ = rb_funcall(obj,				\
+				   NUM2INT(dbst->filter[type_kv]),	\
+                                   1, a);				\
+	}								\
+	else {								\
+	    _bdb1_tmp_ = rb_funcall(dbst->filter[type_kv],		\
+				    bdb1_id_call, 1, a);		\
+ 	}								\
+    }									\
     if (dbst->marshal) {						\
         if (rb_obj_is_kind_of(a, bdb1_cDelegate)) {			\
 	    _bdb1_tmp_ = rb_funcall(dbst->marshal, id_dump,		\
@@ -95,9 +112,12 @@ extern VALUE bdb1_deleg_to_orig _((VALUE));
  	}								\
     }									\
     else {								\
-        _bdb1_tmp_ = rb_obj_as_string(a);				\
+        _bdb1_tmp_ = rb_obj_as_string(_bdb1_tmp_);			\
         if (a == Qnil)							\
             _bdb1_is_nil = 1;						\
+        else if (dbst->filter[type_kv]) {				\
+            a = rb_obj_as_string(a);					\
+        }								\
         else								\
             a = _bdb1_tmp_;						\
     }									\
@@ -133,15 +153,17 @@ extern VALUE bdb1_deleg_to_orig _((VALUE));
 
 #define free_key(dbst, key)
 
-#define test_recno(dbst, key, recno, a)		\
+#define test_recno(obj, key, recno, a)		\
 {						\
+    bdb1_DB *dbst;				\
+    Data_Get_Struct(obj, bdb1_DB, dbst);	\
     if (dbst->type == DB_RECNO) {		\
         recno = NUM2INT(a) + dbst->array_base;	\
         key.data = &recno;			\
         key.size = sizeof(db_recno_t);		\
     }						\
     else {					\
-        test_dump(dbst, key, a);		\
+        test_dump(obj, key, a, FILTER_KEY);	\
     }						\
 }
 
@@ -151,7 +173,7 @@ extern VALUE bdb1_s_new _((int, VALUE *, VALUE));
 extern VALUE bdb1_put _((int, VALUE *, VALUE));
 extern VALUE bdb1_get _((int, VALUE *, VALUE));
 extern VALUE bdb1_del _((VALUE, VALUE));
-extern VALUE bdb1_test_load _((bdb1_DB *, DBT));
+extern VALUE bdb1_test_load _((VALUE, DBT, int));
 extern int bdb1_test_error _((int));
 extern VALUE bdb1_each_value _((VALUE));
 extern VALUE bdb1_each_eulav _((VALUE));

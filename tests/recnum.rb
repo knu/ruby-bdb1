@@ -23,10 +23,16 @@ clean
 
 print "\nVERSION of BDB1 is #{BDB1::VERSION}\n"
 
-class TestRecnum < RUNIT::TestCase
+Inh = defined?(RUNIT) ? RUNIT : Test::Unit
+
+class TestRecnum < Inh::TestCase
    def test_00_error
-      assert_error(BDB1::Fatal, 'BDB1::Recnum.new(".", "a")', "invalid name")
-      assert_error(BDB1::Fatal, 'BDB1::Recnum.open("tmp/aa", "env" => 1)', "invalid Env")
+      assert_raises(BDB1::Fatal, "invalid name") do
+	 BDB1::Recnum.new(".", "a")
+      end
+      assert_raises(BDB1::Fatal, "invalid Env") do
+	 BDB1::Recnum.open("tmp/aa", "env" => 1)
+      end
    end
 
    def test_01_init
@@ -151,7 +157,7 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 j = i + rand($bdb1.size - i)
 	 if ! $array.slice(i .. j)
-	    assert_error(RangeError, '', "<invalid range>") { $bdb1.slice!(i .. j) }
+	    assert_raises(RangeError, "<invalid range>") { $bdb1.slice!(i .. j) }
 	    another += 1
 	    redo if another < 10
 	    another = 0
@@ -167,7 +173,7 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 j = 1 + rand($bdb1.size - i)
 	 if ! $array.slice(-i .. -j)
-	    assert_error(RangeError, '', "<invalid range>") { $bdb1.slice!(-i .. -j) }
+	    assert_raises(RangeError, "<invalid range>") { $bdb1.slice!(-i .. -j) }
 	    another += 1
 	    redo if another < 10
 	    another = 0
@@ -303,7 +309,7 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 j = i + rand($bdb1.size - i)
 	 if ! $array.slice(i .. j)
-	    assert_error(RangeError, '', "<invalid range>") { $bdb1.fill(k, i .. j) }
+	    assert_raises(RangeError, "<invalid range>") { $bdb1.fill(k, i .. j) }
 	    another += 1
 	    redo if another < 10
 	    another = 0
@@ -320,7 +326,7 @@ class TestRecnum < RUNIT::TestCase
 	 i = rand($bdb1.size)
 	 j = 1 + rand($bdb1.size - i)
 	 if ! $array.slice(-i .. -j)
-	    assert_error(RangeError, '', "<invalid range>") { $bdb1.fill(k, -i .. -j) }
+	    assert_raises(RangeError, "<invalid range>") { $bdb1.fill(k, -i .. -j) }
 	    another += 1
 	    redo if another < 10
 	    another = 0
@@ -364,4 +370,6 @@ class TestRecnum < RUNIT::TestCase
       
 end
 
-RUNIT::CUI::TestRunner.run(TestRecnum.suite)
+if defined?(RUNIT)
+   RUNIT::CUI::TestRunner.run(TestRecnum.suite)
+end

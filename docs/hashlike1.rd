@@ -71,6 +71,14 @@ These are the common methods for ((|BDB1::Btree|)), ((|BDB1::Hash|)),
                 set the underlying database page size
            : ((|set_lorder|))
                 set the database byte order
+           : ((|set_store_key|))
+                specify a Proc called before a key is stored
+           : ((|set_fetch_key|))
+                specify a Proc called after a key is read
+           : ((|set_store_value|))
+                specify a Proc called before a value is stored
+           : ((|set_fetch_value|))
+                specify a Proc called after a value is read
 
        : ((|options specific to BDB1::Btree|))
 
@@ -90,8 +98,9 @@ These are the common methods for ((|BDB1::Btree|)), ((|BDB1::Hash|)),
            : ((|set_h_nelem|))
                 set the Hash table size
 
-Proc given to ((|set_bt_compare|)), ((|set_bt_prefix|)) and
-((|set_h_hash|)) can be also specified as
+Proc given to ((|set_bt_compare|)), ((|set_bt_prefix|)), 
+((|set_h_hash|)), ((|set_store_key|)), ((|set_fetch_key|)),
+((|set_store_value|)) and ((|set_fetch_value|)) can be also specified as
 a method (replace the prefix ((|set_|)) with ((|bdb1_|)))
 
 For example 

@@ -126,7 +126,7 @@ bdb1_intern_shift_pop(obj, depart, len)
     for (i = 0; i < len; i++) {
 	ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, depart));
 	if (ret == DB_NOTFOUND) break;
-	rb_ary_push(res, bdb1_test_load(dbst, data));
+	rb_ary_push(res, bdb1_test_load(obj, data, FILTER_VALUE));
 	bdb1_test_error(dbst->dbp->del(dbst->dbp, 0, R_CURSOR));
 	if (dbst->len > 0) dbst->len--;
     }

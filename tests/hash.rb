@@ -9,6 +9,21 @@ module BDB1
 	 a.hash
       end
    end
+
+   class AZ < Hash
+      def bdb1_store_key(a)
+	 "xx_" + a
+      end
+      def bdb1_fetch_key(a)
+	 a.sub(/^xx_/, '')
+      end
+      def bdb1_store_value(a)
+	 "yy_" + a
+      end
+      def bdb1_fetch_value(a)
+	 a.sub(/^yy_/, '')
+      end
+   end
 end
 
 def clean
@@ -24,10 +39,16 @@ clean
 
 print "\nVERSION of BDB1 is #{BDB1::VERSION}\n"
 
-class TestHash < RUNIT::TestCase
+Inh = defined?(RUNIT) ? RUNIT : Test::Unit
+
+class TestHash < Inh::TestCase
    def test_00_error
-      assert_error(BDB1::Fatal, 'BDB1::Hash.new(".", "a")', "invalid name")
-      assert_error(BDB1::Fatal, 'BDB1::Hash.open("tmp/aa", "env" => 1)', "invalid Env")
+      assert_raises(BDB1::Fatal, "invalid name") do
+	 BDB1::Hash.new(".", "a")
+      end
+      assert_raises(BDB1::Fatal, "invalid Env") do
+	 BDB1::Hash.open("tmp/aa", "env" => 1)
+      end
    end
    def test_01_init
       assert_kind_of(BDB1::Hash, $bdb = BDB1::Hash.new("tmp/aa", "a"), "<open>")
@@ -151,6 +172,31 @@ class TestHash < RUNIT::TestCase
       end
    end
 
+   def test_10_sh
+      val = 'a' .. 'zz'
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Hash, $bdb = BDB1::AZ.open("tmp/aa", "w"), "<sh>")
+      val.each do |l|
+	 assert_equal(l, $bdb[l] = l, "<store>")
+      end
+      $bdb.each do |k, v|
+	 assert_equal(k, v, "<fetch>")
+      end
+      assert_equal(nil, $bdb.close, "<close>")
+      assert_kind_of(BDB1::Hash, $bdb = BDB1::Hash.open("tmp/aa"), "<sh>")
+      val.each do |l|
+	 assert_equal("yy_#{l}", $bdb["xx_#{l}"], "<fetch value>")
+      end
+      $bdb.each do |k, v|
+	 assert_equal("xx_", k[0, 3], "<fetch key>")
+	 assert_equal("yy_", v[0, 3], "<fetch key>")
+      end
+      assert_equal(nil, $bdb.close, "<close>")
+      clean
+   end
+
 end
 
-RUNIT::CUI::TestRunner.run(TestHash.suite)
+if defined?(RUNIT)
+   RUNIT::CUI::TestRunner.run(TestHash.suite)
+end

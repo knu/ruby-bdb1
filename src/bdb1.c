@@ -6,7 +6,7 @@ ID id_dump, id_load, id_current_db;
 
 static VALUE bdb1_cBtree, bdb1_cHash, bdb1_cUnknown;
 
-static ID id_bt_compare, id_bt_prefix, id_h_hash, id_proc_call;
+static ID id_bt_compare, id_bt_prefix, id_h_hash, bdb1_id_call;
 
 static VALUE bdb1_errstr;
 static int bdb1_errcall = 0;
@@ -54,15 +54,29 @@ bdb1_obj_init(argc, argv, obj)
 }
 
 VALUE
-bdb1_test_load(dbst, a)
-    bdb1_DB *dbst;
+bdb1_test_load(obj, a, type_kv)
+    VALUE obj;
     DBT a;
+    int type_kv;
 {
     VALUE res;
     int i;
+    bdb1_DB *dbst;
 
+    Data_Get_Struct(obj, bdb1_DB, dbst);
     if (dbst->marshal) {
-        res = rb_funcall(dbst->marshal, id_load, 1, rb_str_new(a.data, a.size));
+	res = rb_str_new(a.data, a.size);
+	if (dbst->filter[2 + type_kv]) {
+	    if (FIXNUM_P(dbst->filter[2 + type_kv])) {
+		res = rb_funcall(obj, 
+				 NUM2INT(dbst->filter[2 + type_kv]), 1, res);
+	    }
+	    else {
+		res = rb_funcall(dbst->filter[2 + type_kv],
+				 bdb1_id_call, 1, res);
+	    }
+	}
+	res = rb_funcall(dbst->marshal, id_load, 1, res);
     }
     else {
 	if (a.size == 1 && ((char *)a.data)[0] == '\000') {
@@ -70,6 +84,17 @@ bdb1_test_load(dbst, a)
 	}
 	else {
 	    res = rb_tainted_str_new(a.data, a.size);
+	    if (dbst->filter[2 + type_kv]) {
+		if (FIXNUM_P(dbst->filter[2 + type_kv])) {
+		    res = rb_funcall(obj, 
+				     NUM2INT(dbst->filter[2 + type_kv]),
+				     1, res);
+		}
+		else {
+		    res = rb_funcall(dbst->filter[2 + type_kv],
+				     bdb1_id_call, 1, res);
+		}
+	    }
 	}
     }
     return res;
@@ -85,7 +110,7 @@ test_load_dyna(obj, key, val)
     struct deleg_class *delegst;
     
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    res = bdb1_test_load(dbst, val);
+    res = bdb1_test_load(obj, val, FILTER_VALUE);
     if (dbst->marshal && !SPECIAL_CONST_P(res)) {
 	del = Data_Make_Struct(bdb1_cDelegate, struct deleg_class, 
 			       bdb1_deleg_mark, bdb1_deleg_free, delegst);
@@ -114,12 +139,12 @@ bdb1_bt_compare(a, b)
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    av = bdb1_test_load(dbst, *a);
-    bv = bdb1_test_load(dbst, *b);
+    av = bdb1_test_load(obj, *a, FILTER_VALUE);
+    bv = bdb1_test_load(obj, *b, FILTER_VALUE);
     if (dbst->bt_compare == 0)
 	res = rb_funcall(obj, id_bt_compare, 2, av, bv);
     else
-	res = rb_funcall(dbst->bt_compare, id_proc_call, 2, av, bv);
+	res = rb_funcall(dbst->bt_compare, bdb1_id_call, 2, av, bv);
     return NUM2INT(res);
 } 
 
@@ -134,12 +159,12 @@ bdb1_bt_prefix(a, b)
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    av = bdb1_test_load(dbst, *a);
-    bv = bdb1_test_load(dbst, *b);
+    av = bdb1_test_load(obj, *a, FILTER_VALUE);
+    bv = bdb1_test_load(obj, *b, FILTER_VALUE);
     if (dbst->bt_prefix == 0)
 	res = rb_funcall(obj, id_bt_prefix, 2, av, bv);
     else
-	res = rb_funcall(dbst->bt_prefix, id_proc_call, 2, av, bv);
+	res = rb_funcall(dbst->bt_prefix, bdb1_id_call, 2, av, bv);
     return NUM2INT(res);
 } 
 
@@ -159,7 +184,7 @@ bdb1_h_hash(bytes, length)
     if (dbst->h_hash == 0)
 	res = rb_funcall(obj, id_h_hash, 1, st);
     else
-	res = rb_funcall(dbst->h_hash, id_proc_call, 1, st);
+	res = rb_funcall(dbst->h_hash, bdb1_id_call, 1, st);
     return NUM2UINT(res);
 }
 
@@ -178,10 +203,14 @@ static void
 bdb1_mark(dbst)
     bdb1_DB *dbst;
 {
+    int i;
     if (dbst->marshal) rb_gc_mark(dbst->marshal);
     if (dbst->bt_compare) rb_gc_mark(dbst->bt_compare);
     if (dbst->bt_prefix) rb_gc_mark(dbst->bt_prefix);
     if (dbst->h_hash) rb_gc_mark(dbst->h_hash);
+    for (i = 0; i < 4; i++) {
+	if (dbst->filter[i]) rb_gc_mark(dbst->filter[i]);
+    }
 }
 
 static VALUE
@@ -233,26 +262,6 @@ bdb1_i185_btree(obj, dbstobj)
 	dbst->has_info = Qtrue;
 	dbst->info.bi.lorder = NUM2INT(value);
     }
-    else if (strcmp(options, "marshal") == 0) {
-        switch (value) {
-        case Qtrue: 
-	    dbst->marshal = bdb1_mMarshal;
-	    dbst->options |= BDB1_MARSHAL;
-	    break;
-        case Qfalse: 
-	    dbst->marshal = Qfalse;
-	    dbst->options &= ~BDB1_MARSHAL;
-	    break;
-        default: 
-	    if (!rb_respond_to(value, id_load) ||
-		!rb_respond_to(value, id_dump)) {
-		rb_raise(bdb1_eFatal, "marshal value must be true or false");
-	    }
-	    dbst->marshal = value;
-	    dbst->options |= BDB1_MARSHAL;
-	    break;
-        }
-    }
     return Qnil;
 }
 
@@ -292,26 +301,6 @@ bdb1_i185_hash(obj, dbstobj)
     else if (strcmp(options, "set_lorder") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.hi.lorder = NUM2INT(value);
-    }
-    else if (strcmp(options, "marshal") == 0) {
-        switch (value) {
-        case Qtrue: 
-	    dbst->marshal = bdb1_mMarshal;
-	    dbst->options |= BDB1_MARSHAL;
-	    break;
-        case Qfalse: 
-	    dbst->marshal = Qfalse;
-	    dbst->options &= ~BDB1_MARSHAL;
-	    break;
-        default: 
-	    if (!rb_respond_to(value, id_load) ||
-		!rb_respond_to(value, id_dump)) {
-		rb_raise(bdb1_eFatal, "marshal value must be true or false");
-	    }
-	    dbst->marshal = value;
-	    dbst->options |= BDB1_MARSHAL;
-	    break;
-        }
     }
     return Qnil;
 }
@@ -381,7 +370,23 @@ bdb1_i185_recno(obj, dbstobj)
 	default: rb_raise(bdb1_eFatal, "array base must be 0 or 1");
 	}
     }
-    else if (strcmp(options, "marshal") == 0) {
+    return Qnil;
+}
+
+static VALUE
+bdb1_i185_common(obj, dbstobj)
+    VALUE obj, dbstobj;
+{
+    VALUE key, value;
+    bdb1_DB *dbst;
+    char *options;
+
+    Data_Get_Struct(dbstobj, bdb1_DB, dbst);
+    key = rb_ary_entry(obj, 0);
+    value = rb_ary_entry(obj, 1);
+    key = rb_obj_as_string(key);
+    options = RSTRING(key)->ptr;
+    if (strcmp(options, "marshal") == 0) {
         switch (value) {
         case Qtrue: 
 	    dbst->marshal = bdb1_mMarshal;
@@ -400,6 +405,26 @@ bdb1_i185_recno(obj, dbstobj)
 	    dbst->options |= BDB1_MARSHAL;
 	    break;
         }
+    }
+    else if (strcmp(options, "set_store_key") == 0) {
+	if (!rb_obj_is_kind_of(value, rb_cProc)) 
+	    rb_raise(bdb1_eFatal, "expected a Proc object");
+	dbst->filter[FILTER_KEY] = value;
+    }
+    else if (strcmp(options, "set_fetch_key") == 0) {
+	if (!rb_obj_is_kind_of(value, rb_cProc)) 
+	    rb_raise(bdb1_eFatal, "expected a Proc object");
+	dbst->filter[2 + FILTER_KEY] = value;
+    }
+    else if (strcmp(options, "set_store_value") == 0) {
+	if (!rb_obj_is_kind_of(value, rb_cProc)) 
+	    rb_raise(bdb1_eFatal, "expected a Proc object");
+	dbst->filter[FILTER_VALUE] = value;
+    }
+    else if (strcmp(options, "set_fetch_value") == 0) {
+	if (!rb_obj_is_kind_of(value, rb_cProc)) 
+	    rb_raise(bdb1_eFatal, "expected a Proc object");
+	dbst->filter[2 + FILTER_KEY] = value;
     }
     return Qnil;
 }
@@ -493,6 +518,18 @@ bdb1_open_common(argc, argv, obj)
 	dbst->marshal = obj;
 	dbst->options |= BDB1_MARSHAL;
     }
+    if (rb_method_boundp(obj, rb_intern("bdb1_store_key"), 0) == Qtrue) {
+	dbst->filter[FILTER_KEY] = INT2FIX(rb_intern("bdb1_store_key"));
+    }
+    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_key"), 0) == Qtrue) {
+	dbst->filter[2 + FILTER_KEY] = INT2FIX(rb_intern("bdb1_fetch_key"));
+    }
+    if (rb_method_boundp(obj, rb_intern("bdb1_store_value"), 0) == Qtrue) {
+	dbst->filter[FILTER_VALUE] = INT2FIX(rb_intern("bdb1_store_value"));
+    }
+    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_value"), 0) == Qtrue) {
+	dbst->filter[2 + FILTER_VALUE] = INT2FIX(rb_intern("bdb1_fetch_value"));
+    }
     if (!NIL_P(f)) {
 	if (TYPE(f) != T_HASH) {
             rb_raise(bdb1_eFatal, "options must be an hash");
@@ -526,6 +563,7 @@ bdb1_open_common(argc, argv, obj)
 	    rb_iterate(rb_each, f, bdb1_i185_recno, res);
 	    break;
 	}
+	rb_iterate(rb_each, f, bdb1_i185_common, res);
     }
     if (name == NULL) oflags = O_CREAT | O_RDWR;
     if ((dbst->dbp = dbopen(name, oflags, mode, type, 
@@ -617,7 +655,7 @@ bdb1_append(argc, argv, obj)
     bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, R_LAST));
     for (i = 0, a = argv; i < argc; i++, a++) {
 	DATA_ZERO(data);
-	test_dump(dbst, data, *a);
+	test_dump(obj, data, *a, FILTER_VALUE);
 	bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, R_IAFTER));
     }
     return obj;
@@ -644,8 +682,8 @@ bdb1_put(argc, argv, obj)
     }
     DATA_ZERO(key);
     DATA_ZERO(data);
-    test_recno(dbst, key, recno, a);
-    test_dump(dbst, data, b);
+    test_recno(obj, key, recno, a);
+    test_dump(obj, data, b, FILTER_VALUE);
     ret = bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, flags));
     if (ret == DB_KEYEXIST)
 	return Qfalse;
@@ -655,21 +693,24 @@ bdb1_put(argc, argv, obj)
 }
 
 static VALUE
-test_load_key(dbst, key)
-    bdb1_DB *dbst;
+test_load_key(obj, key)
+    VALUE obj;
     DBT key;
 {
+    bdb1_DB *dbst;
+    Data_Get_Struct(obj, bdb1_DB, dbst);
     if (dbst->type == DB_RECNO)
         return INT2NUM((*(db_recno_t *)key.data) - dbst->array_base);
-    return bdb1_test_load(dbst, key);
+    return bdb1_test_load(obj, key, FILTER_KEY);
 }
 
 static VALUE
-bdb1_assoc(dbst, key, data)
-    bdb1_DB *dbst;
+bdb1_assoc(obj, key, data)
+    VALUE obj;
     DBT key, data;
 {
-    return rb_assoc_new(test_load_key(dbst, key), bdb1_test_load(dbst, data));
+    return rb_assoc_new(test_load_key(obj, key), 
+			bdb1_test_load(obj, data, FILTER_VALUE));
 }
 
 static VALUE
@@ -677,9 +718,8 @@ bdb1_assoc_dyna(obj, key, data)
     VALUE obj;
     DBT key, data;
 {
-    bdb1_DB *dbst;
-    GetDB(obj, dbst);
-    return rb_assoc_new(test_load_key(dbst, key), test_load_dyna(obj, key, data));
+    return rb_assoc_new(test_load_key(obj, key), 
+			test_load_dyna(obj, key, data));
 }
 
 static VALUE
@@ -710,7 +750,7 @@ bdb1_get_internal(argc, argv, obj, notfound, dyna)
 	flagss = flags = NUM2INT(b);
 	break;
     }
-    test_recno(dbst, key, recno, a);
+    test_recno(obj, key, recno, a);
     ret = bdb1_test_error(dbst->dbp->get(dbst->dbp, &key, &data, flags));
     if (ret == DB_NOTFOUND)
         return notfound;
@@ -718,7 +758,7 @@ bdb1_get_internal(argc, argv, obj, notfound, dyna)
 	return test_load_dyna(obj, key, data);
     }
     else {
-	return bdb1_test_load(dbst, data);
+	return bdb1_test_load(obj, data, FILTER_VALUE);
     }
 }
 
@@ -785,8 +825,8 @@ bdb1_has_both(obj, a, b)
     GetDB(obj, dbst);
     DATA_ZERO(key);
     DATA_ZERO(data);
-    test_recno(dbst, key, recno, a);
-    test_dump(dbst, data, b);
+    test_recno(obj, key, recno, a);
+    test_dump(obj, data, b, FILTER_VALUE);
     MEMCPY(&keys, &key, DBT, 1);
     MEMCPY(&datas, &data, DBT, 1);
     flags = (dbst->type == DB_HASH)?DB_FIRST:R_CURSOR;
@@ -821,7 +861,7 @@ bdb1_del(obj, a)
 	rb_warning("delete can give strange result with DB_HASH");
     }
     DATA_ZERO(key);
-    test_recno(dbst, key, recno, a);
+    test_recno(obj, key, recno, a);
     ret = bdb1_test_error(dbst->dbp->del(dbst->dbp, &key, 0));
     if (ret == DB_NOTFOUND)
         return Qnil;
@@ -869,7 +909,7 @@ bdb1_delete_if(obj)
             return Qnil;
         }
 	flags = DB_NEXT;
-        if (RTEST(rb_yield(bdb1_assoc(dbst, key, data)))) {
+        if (RTEST(rb_yield(bdb1_assoc(obj, key, data)))) {
 	    bdb1_test_error(dbst->dbp->del(dbst->dbp, 0, R_CURSOR));
         }
     } while (1);
@@ -954,11 +994,11 @@ bdb1_each_vc(obj, replace)
         }
 	flags = DB_NEXT;
 	free_key(dbst, key);
-        res = rb_yield(bdb1_test_load(dbst, data));
+        res = rb_yield(bdb1_test_load(obj, data, FILTER_VALUE));
 	rb_ary_push(result, res);
 	if (replace == Qtrue) {
 	    DATA_ZERO(data);
-	    test_dump(dbst, data, res);
+	    test_dump(obj, data, res, FILTER_VALUE);
 	    bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, 0));
 	}
     } while (1);
@@ -987,7 +1027,7 @@ bdb1_each_valuec(obj, sens, result)
         }
 	flags = sens;
 	free_key(dbst, key);
-	interm = bdb1_test_load(dbst, data);
+	interm = bdb1_test_load(obj, data, FILTER_VALUE);
         rest = rb_yield(interm);
 	if (result != Qnil && RTEST(rest)) {
 	    rb_ary_push(result, interm);
@@ -1017,7 +1057,7 @@ bdb1_each_keyc(obj, sens)
         if (ret == DB_NOTFOUND) {
             return Qnil;
         }
-	rb_yield(test_load_key(dbst, key));
+	rb_yield(test_load_key(obj, key));
 	flags = sens;
     } while (1);
     return obj;
@@ -1045,7 +1085,7 @@ bdb1_each_common(obj, sens)
         if (ret == DB_NOTFOUND) {
             return Qnil;
         }
-        rb_yield(bdb1_assoc(dbst, key, data));
+        rb_yield(bdb1_assoc(obj, key, data));
 	flags = sens;
     } while (1);
     return obj;
@@ -1075,18 +1115,20 @@ bdb1_to_type(obj, result, flag)
 	switch (TYPE(result)) {
 	case T_ARRAY:
 	    if (flag == Qtrue) {
-		rb_ary_push(result, bdb1_assoc(dbst, key, data));
+		rb_ary_push(result, bdb1_assoc(obj, key, data));
 	    }
 	    else {
-		rb_ary_push(result, bdb1_test_load(dbst, data));
+		rb_ary_push(result, bdb1_test_load(obj, data, FILTER_VALUE));
 	    }
 	    break;
 	case T_HASH:
 	    if (flag == Qtrue) {
-		rb_hash_aset(result, test_load_key(dbst, key), bdb1_test_load(dbst, data));
+		rb_hash_aset(result, test_load_key(obj, key), 
+			     bdb1_test_load(obj, data, FILTER_VALUE));
 	    }
 	    else {
-		rb_hash_aset(result, bdb1_test_load(dbst, data), test_load_key(dbst, key));
+		rb_hash_aset(result, bdb1_test_load(obj, data, FILTER_VALUE),
+			     test_load_key(obj, key));
 	    }
 	}
 	flags = (flag == Qnil)?DB_PREV:DB_NEXT;
@@ -1126,7 +1168,7 @@ bdb1_each_kv(obj, a, result, flag)
     VALUE k;
 
     GetDB(obj, dbst);
-    test_recno(dbst, key, recno, a);
+    test_recno(obj, key, recno, a);
     MEMCPY(&keys, &key, DBT, 1);
     DATA_ZERO(data);
     flags = R_CURSOR;
@@ -1136,9 +1178,9 @@ bdb1_each_kv(obj, a, result, flag)
 	    memcmp(keys.data, key.data, key.size) != 0) {
 	    return (result == Qnil)?obj:result;
 	}
-	k =  bdb1_test_load(dbst, data); 
+	k =  bdb1_test_load(obj, data, FILTER_VALUE); 
 	if (RTEST(flag)) {
-	    k = rb_assoc_new(test_load_key(dbst, key), k);
+	    k = rb_assoc_new(test_load_key(obj, key), k);
 	}
 	if (NIL_P(result)) {
 	    rb_yield(k);
@@ -1207,7 +1249,7 @@ bdb1_values(obj)
         }
 	flags = DB_NEXT;
 	free_key(dbst, key);
-        rb_ary_push(ary, bdb1_test_load(dbst, data));
+        rb_ary_push(ary, bdb1_test_load(obj, data, FILTER_VALUE));
     } while (1);
     return ary;
 }
@@ -1232,10 +1274,10 @@ bdb1_internal_value(obj, a, b, sens)
 	    return (b == Qfalse)?Qfalse:Qnil;
 	}
 	flags = sens;
-	if (rb_equal(a, bdb1_test_load(dbst, data)) == Qtrue) {
+	if (rb_equal(a, bdb1_test_load(obj, data, FILTER_VALUE)) == Qtrue) {
 	    VALUE d;
 	    
-	    d = (b == Qfalse)?Qtrue:test_load_key(dbst, key);
+	    d = (b == Qfalse)?Qtrue:test_load_key(obj, key);
 	    free_key(dbst, key);
 	    return  d;
 	}
@@ -1294,7 +1336,7 @@ bdb1_keys(obj)
         if (ret == DB_NOTFOUND) {
             return ary;
         }
-	rb_ary_push(ary, test_load_key(dbst, key));
+	rb_ary_push(ary, test_load_key(obj, key));
 	free_key(dbst, key);
 	flags = DB_NEXT;
     } while (1);
@@ -1349,7 +1391,7 @@ Init_bdb1()
     id_bt_compare = rb_intern("bdb1_bt_compare");
     id_bt_prefix = rb_intern("bdb1_bt_prefix");
     id_h_hash = rb_intern("bdb1_h_hash");
-    id_proc_call = rb_intern("call");
+    bdb1_id_call = rb_intern("call");
     if (rb_const_defined_at(rb_cObject, rb_intern("BDB1"))) {
 	rb_raise(rb_eNameError, "class already defined");
     }
