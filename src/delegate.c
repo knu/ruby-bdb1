@@ -144,7 +144,7 @@ bdb1_deleg_load(obj, str)
 {
     bdb1_DB *dbst;
 
-    if ((obj = rb_thread_local_aref(rb_thread_current(), id_current_db)) == Qnil) {
+    if ((obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db)) == Qnil) {
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);

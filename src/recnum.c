@@ -120,13 +120,13 @@ bdb1_intern_shift_pop(obj, depart, len)
 
     rb_secure(4);
     GetDB(obj, dbst);
-    init_recno(dbst, key, recno);
+    INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
     res = rb_ary_new2(len);
     for (i = 0; i < len; i++) {
 	ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, depart));
 	if (ret == DB_NOTFOUND) break;
-	rb_ary_push(res, bdb1_test_load(obj, data, FILTER_VALUE));
+	rb_ary_push(res, bdb1_test_load(obj, &data, FILTER_VALUE));
 	bdb1_test_error(dbst->dbp->del(dbst->dbp, 0, R_CURSOR));
 	if (dbst->len > 0) dbst->len--;
     }
@@ -406,6 +406,25 @@ bdb1_sary_push_m(argc, argv, obj)
     return obj;
 }
     
+static VALUE
+bdb1_sary_s_create(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE res;
+    int i;
+
+    res = rb_funcall2(obj, rb_intern("new"), 0, 0);
+    if (argc < 0) {
+        rb_raise(rb_eArgError, "negative number of arguments");
+    }
+    if (argc > 0) {
+	bdb1_sary_push_m(argc, argv, res);
+    }
+    return res;
+}
+
 static VALUE
 bdb1_sary_shift(obj)
     VALUE obj;
@@ -922,6 +941,7 @@ void bdb1_init_recnum()
 {
     id_cmp = rb_intern("<=>");
     bdb1_cRecnum = rb_define_class_under(bdb1_mDb, "Recnum", bdb1_cCommon);
+    rb_define_singleton_method(bdb1_cRecnum, "[]", bdb1_sary_s_create, -1);
     rb_const_set(bdb1_mDb, rb_intern("Recno"), bdb1_cRecnum);
     rb_define_private_method(bdb1_cRecnum, "initialize", bdb1_recnum_init, -1);
     rb_define_method(bdb1_cRecnum, "[]", bdb1_sary_aref, -1);

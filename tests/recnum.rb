@@ -210,7 +210,7 @@ class TestRecnum < Inh::TestCase
       100.times do
 	 aa = []
 	 rand(12).times do 
-	    aa.push rand $bdb1.size
+	    aa.push(rand($bdb1.size))
 	 end
 	 if RUBY_VERSION >= "1.7.2"
 	    assert_equal($array.select(*aa), $bdb1.select(*aa), "<select>")

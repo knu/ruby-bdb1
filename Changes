@@ -32,3 +32,11 @@
 * switch on model allocate/initialize
 * ::open == ::new + block
 * 1.7.2 Recnum#map, #insert
+
+-- 0.1.8
+
+* documentation : make rd2; make rdoc
+* BDB1::Common::[]
+* corrected set_fetch_value
+* new return value for []= (1.8.0)
+* adapted for 1.8.0

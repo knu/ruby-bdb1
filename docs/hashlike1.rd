@@ -6,8 +6,22 @@ These are the common methods for ((|BDB1::Btree|)), ((|BDB1::Hash|)),
 * ((<Class Methods>))
 * ((<Methods>))
 
+## Berkeley DB is an embedded database system that supports keyed access
+## to data.
+# module BDB1
+## Implementation of a sorted, balanced tree structure
+# class Btree < Common
+# end
+# class Common
+# class << self
+
+
 === Class Methods
 
+--- type[hash]
+--- type[bdb1]
+    create a new temporary db file, populated with the given object
+    
 --- create([name, flags, mode, options])
 --- new([name, flags, mode, options])
 --- open([name, flags, mode, options])
@@ -112,7 +126,7 @@ For example
                   end
                end
             end
- 
+# end 
 === Methods
 
 --- self[key]
@@ -126,17 +140,14 @@ For example
 --- self[key] = value
      Stores the ((|value|)) associating with ((|key|))
 
-     If ((|nil|)) is given as the value, the association from the key will be
-     removed. 
+     return ((|value|))
 
 --- db_put(key, value [, flags])
 --- put(key, value [, flags])
 --- store(key, value [, flags])
      Stores the ((|value|)) associating with ((|key|))
 
-     If ((|nil|)) is given as the value, the association from the ((|key|))
-     will be removed. It return the object deleted or ((|nil|)) if the
-     specified key don't exist.
+     Return the  value correspondind the ((|key|))
 
      ((|flags|)) can have the value ((|DBD::NOOVERWRITE|)), in this case
      it will return ((|nil|)) if the specified key exist, otherwise ((|true|))
@@ -227,18 +238,18 @@ For example
       Create an hash without the associations if the evaluation of the
       block returns true. 
 
---- reverse_each([set]) { |key, value| ... }
---- reverse_each_pair([set]) { |key, value| ... }
+--- reverse_each { |key, value| ... }
+--- reverse_each_pair { |key, value| ... }
       Iterates over associations in reverse order 
 
       Only for ((|BDB1::Btree|))
 
---- reverse_each_key([set]) { |key| ... }
+--- reverse_each_key { |key| ... }
       Iterates over keys in reverse order 
 
       Only for ((|BDB1::Btree|))
 
---- reverse_each_value([set]) { |value| ... }
+--- reverse_each_value { |value| ... }
       Iterates over values in reverse order.
 
       Only for ((|BDB1::Btree|))
@@ -255,5 +266,6 @@ For example
        
 --- values 
        Returns the array of the values in the database.
-
+# end
+# end
 =end

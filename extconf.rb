@@ -35,11 +35,19 @@ SUBDIRS = #{subdirs.join(' ')}
 
    EOF
    make.print "HTML = bdb1.html"
-   Dir.foreach('docs') do |x|
-      make.print " \\\n\tdocs/#{x}" if x.sub!(/\.rd$/, ".html")
-   end
+   docs = Dir['docs/*.rd']
+   docs.each {|x| make.print " \\\n\t#{x.sub(/\.rd$/, '.html')}" }
+   make.print "\n\nRDOC = bdb1.rd"
+   docs.each {|x| make.print " \\\n\t#{x}" }
    make.puts
    make.print <<-EOF
+
+rdoc: docs/doc/index.html
+
+docs/doc/index.html: $(RDOC)
+\t@-(cd docs; #{CONFIG['RUBY_INSTALL_NAME']} b.rb bdb1; rdoc bdb1.rb)
+
+rd2: html
 
 html: $(HTML)
 
@@ -48,7 +56,7 @@ test: $(DLLIB)
    Dir.foreach('tests') do |x|
       next if /^\./ =~ x || /(_\.rb|~)$/ =~ x
       next if FileTest.directory?(x)
-      make.print "\truby tests/#{x}\n"
+      make.print "\t#{CONFIG['RUBY_INSTALL_NAME']} tests/#{x}\n"
    end
 ensure
    make.close
@@ -57,7 +65,7 @@ end
 subdirs.each do |subdir|
    STDERR.puts("#{$0}: Entering directory `#{subdir}'")
    Dir.chdir(subdir)
-   system("#{Config::CONFIG['RUBY_INSTALL_NAME']} extconf.rb " + ARGV.join(" "))
+   system("#{CONFIG['RUBY_INSTALL_NAME']} extconf.rb " + ARGV.join(" "))
    Dir.chdir("..")
    STDERR.puts("#{$0}: Leaving directory `#{subdir}'")
 end

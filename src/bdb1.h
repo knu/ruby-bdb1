@@ -91,13 +91,13 @@ extern VALUE bdb1_deleg_to_orig _((VALUE));
         rb_raise(bdb1_eFatal, "closed DB");				\
     }									\
     if (dbst->options & BDB1_NEED_CURRENT) {				\
-    	rb_thread_local_aset(rb_thread_current(), id_current_db, obj);	\
+    	rb_thread_local_aset(rb_thread_current(), bdb1_id_current_db, obj);	\
     }									\
 }
 
 #define DATA_ZERO(key)	memset(&(key), 0, sizeof(key));
 
-#define init_recno(dbst, key, recno)		\
+#define INIT_RECNO(dbst, key, recno)		\
 {						\
     recno = 1;					\
     memset(&(key), 0, sizeof(key));		\
@@ -107,7 +107,7 @@ extern VALUE bdb1_deleg_to_orig _((VALUE));
     }						\
 }
 
-#define free_key(dbst, key)
+#define FREE_KEY(dbst, key)
 
 extern void bdb1_deleg_mark _((struct deleg_class *));
 extern void bdb1_deleg_free _((struct deleg_class *));
@@ -115,7 +115,7 @@ extern VALUE bdb1_init _((int, VALUE *, VALUE));
 extern VALUE bdb1_put _((int, VALUE *, VALUE));
 extern VALUE bdb1_get _((int, VALUE *, VALUE));
 extern VALUE bdb1_del _((VALUE, VALUE));
-extern VALUE bdb1_test_load _((VALUE, DBT, int));
+extern VALUE bdb1_test_load _((VALUE, DBT *, int));
 extern int bdb1_test_error _((int));
 extern VALUE bdb1_each_value _((VALUE));
 extern VALUE bdb1_each_eulav _((VALUE));
@@ -132,5 +132,4 @@ extern void bdb1_init_recnum _((void));
 extern VALUE bdb1_mDb, bdb1_cCommon, bdb1_cDelegate, bdb1_cRecnum;
 extern VALUE bdb1_mMarshal, bdb1_eFatal;
 
-extern ID id_dump, id_load;
-extern ID id_current_db;
+extern ID bdb1_id_current_db;
