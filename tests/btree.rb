@@ -340,7 +340,7 @@ class TestBtree < Inh::TestCase
 
    def test_15_create
       intern_create
-      intern_create(false)
+#      intern_create(false) # Change 1.9
     end
              
 

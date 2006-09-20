@@ -411,8 +411,7 @@ class TestRecnum < Inh::TestCase
    def test_19_cmp
       assert_kind_of(BDB1::Recnum, bdb1 = BDB1::Recnum.new("tmp/bb", "a"), "<open>")
       assert_equal(true, bdb1.empty?, "<empty>")
-      assert_nil(bdb1.close, "<close>")
-      assert_kind_of(BDB1::Recnum, bdb1 = BDB1::Recnum[*$array], "<create>")
+      $array.each {|a| bdb1 << a}
       assert_equal(false, bdb1.empty?, "<empty>")
       assert_equal(0, $bdb1 <=> bdb1, "<=>")
       bdb1 << 12

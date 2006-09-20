@@ -1,5 +1,4 @@
 #include "bdb1.h"
-#include "version.h"
 
 VALUE bdb1_eFatal;
 VALUE bdb1_mDb, bdb1_mMarshal, bdb1_cCommon, bdb1_cRecnum;
@@ -83,7 +82,7 @@ test_dump(obj, key, a, type_kv)
             is_nil = 1;
     }
     key->data = StringValuePtr(tmp);
-    key->size = RSTRING(tmp)->len + is_nil;
+    key->size = RSTRING_LEN(tmp) + is_nil;
     return tmp;
 }
 
@@ -457,6 +456,19 @@ bdb1_i185_recno(obj, dbstobj)
 }
 
 static VALUE
+bdb1_load_dump(obj)
+    VALUE obj;
+{
+    VALUE res;
+
+    res = rb_funcall(obj, rb_intern("respond_to?"), 2, ID2SYM(id_load), Qtrue);
+    if (RTEST(res)) {
+	res = rb_funcall(obj, rb_intern("respond_to?"), 2, ID2SYM(id_dump), Qtrue);
+    }
+    return res;
+}
+
+static VALUE
 bdb1_i185_common(obj, dbstobj)
     VALUE obj, dbstobj;
 {
@@ -480,8 +492,7 @@ bdb1_i185_common(obj, dbstobj)
 	    dbst->options &= ~BDB1_MARSHAL;
 	    break;
         default: 
-	    if (!rb_respond_to(value, id_load) ||
-		!rb_respond_to(value, id_dump)) {
+	    if (!RTEST(bdb1_load_dump(value))) {
 		rb_raise(bdb1_eFatal, "marshal value must be true or false");
 	    }
 	    dbst->marshal = value;
@@ -685,7 +696,7 @@ bdb1_s_alloc(obj)
     if (!cl) {
 	rb_raise(bdb1_eFatal, "unknown database type");
     }
-    if (rb_respond_to(obj, id_load) && rb_respond_to(obj, id_dump)) {
+    if (RTEST(bdb1_load_dump(obj))) {
 	dbst->marshal = obj;
 	dbst->options |= BDB1_MARSHAL;
     }
@@ -734,7 +745,7 @@ bdb1_s_create(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE res;
+    VALUE res, tmp[2];
     int i;
 
     res = rb_funcall2(obj, rb_intern("new"), 0, 0);
@@ -1388,15 +1399,18 @@ bdb1_indexes(argc, argv, obj)
     VALUE indexes;
     int i;
 
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_VALUES_AT
     rb_warn("BDB1#%s is deprecated; use BDB1#values_at",
+#if HAVE_RB_FRAME_THIS_FUNC
+	    rb_id2name(rb_frame_this_func()));
+#else
 	    rb_id2name(rb_frame_last_func()));
+#endif
 #endif
     indexes = rb_ary_new2(argc);
     for (i = 0; i < argc; i++) {
-	RARRAY(indexes)->ptr[i] = bdb1_get(1, argv + i, obj);
+	rb_ary_push(indexes, bdb1_get(1, argv + i, obj));
     }
-    RARRAY(indexes)->len = i;
     return indexes;
 }
 
@@ -1447,7 +1461,7 @@ bdb1_sync(obj)
     return Qtrue;
 }
 
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_VALUES_AT
 
 static VALUE
 bdb1_values_at(argc, argv, obj)
@@ -1462,6 +1476,10 @@ bdb1_values_at(argc, argv, obj)
     }
     return result;
 }
+
+#endif
+
+#if HAVE_RB_ARY_SELECT
 
 static VALUE
 bdb1_select(argc, argv, obj)
@@ -1566,7 +1584,7 @@ Init_bdb1()
     bdb1_cCommon = rb_define_class_under(bdb1_mDb, "Common", rb_cObject);
     rb_define_private_method(bdb1_cCommon, "initialize", bdb1_init, -1);
     rb_include_module(bdb1_cCommon, rb_mEnumerable);
-#if RUBY_VERSION_CODE >= 180
+#ifdef HAVE_RB_DEFINE_ALLOC_FUNC
     rb_define_alloc_func(bdb1_cCommon, bdb1_s_alloc);
 #else
     rb_define_singleton_method(bdb1_cCommon, "allocate", bdb1_s_alloc, 0);
@@ -1622,8 +1640,10 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "index", bdb1_index, 1);
     rb_define_method(bdb1_cCommon, "indexes", bdb1_indexes, -1);
     rb_define_method(bdb1_cCommon, "indices", bdb1_indexes, -1);
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_SELECT
     rb_define_method(bdb1_cCommon, "select", bdb1_select, -1);
+#endif
+#if HAVE_RB_ARY_VALUES_AT
     rb_define_method(bdb1_cCommon, "values_at", bdb1_values_at, -1);
 #endif
     bdb1_cBtree = rb_define_class_under(bdb1_mDb, "Btree", bdb1_cCommon);

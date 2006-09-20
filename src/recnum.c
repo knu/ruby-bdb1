@@ -130,8 +130,8 @@ bdb1_intern_shift_pop(obj, depart, len)
 	bdb1_test_error(dbst->dbp->del(dbst->dbp, 0, R_CURSOR));
 	if (dbst->len > 0) dbst->len--;
     }
-    if (RARRAY(res)->len == 0) return Qnil;
-    else if (RARRAY(res)->len == 1) return RARRAY(res)->ptr[0];
+    if (RARRAY_LEN(res) == 0) return Qnil;
+    else if (RARRAY_LEN(res) == 1) return RARRAY_PTR(res)[0];
     else return res;
 }
 
@@ -163,7 +163,7 @@ bdb1_sary_replace(obj, beg, len, rpl)
     else if (TYPE(rpl) != T_ARRAY) {
 	rpl = rb_ary_new3(1, rpl);
     }
-    rlen = RARRAY(rpl)->len;
+    rlen = RARRAY_LEN(rpl);
 
     tmp[1] = Qnil;
     if (beg >= dbst->len) {
@@ -172,9 +172,9 @@ bdb1_sary_replace(obj, beg, len, rpl)
 	    bdb1_put(2, tmp, obj);
 	    dbst->len++;
 	}
-	for (i = beg, j = 0; j < RARRAY(rpl)->len; i++, j++) {
+	for (i = beg, j = 0; j < RARRAY_LEN(rpl); i++, j++) {
 	    tmp[0] = INT2NUM(i);
-	    tmp[1] = RARRAY(rpl)->ptr[j];
+	    tmp[1] = RARRAY_PTR(rpl)[j];
 	    bdb1_put(2, tmp, obj);
 	    dbst->len++;
 	}
@@ -192,7 +192,7 @@ bdb1_sary_replace(obj, beg, len, rpl)
 	}
 	for (i = beg, j = 0; j < rlen; i++, j++) {
 	    tmp[0] = INT2NUM(i);
-	    tmp[1] = RARRAY(rpl)->ptr[j];
+	    tmp[1] = RARRAY_PTR(rpl)[j];
 	    bdb1_put(2, tmp, obj);
 	}
 	if (len > rlen) {
@@ -262,7 +262,7 @@ bdb1_sary_aset(argc, argv, obj)
     return argv[1];
 }
 
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_INSERT
 
 static VALUE
 bdb1_sary_insert(argc, argv, obj)
@@ -358,9 +358,9 @@ bdb1_sary_concat(obj, y)
 
     y = rb_convert_type(y, T_ARRAY, "Array", "to_ary");
     GetDB(obj, dbst);
-    for (i = 0; i < RARRAY(y)->len; i++) {
+    for (i = 0; i < RARRAY_LEN(y); i++) {
 	tmp[0] = INT2NUM(dbst->len);
-	tmp[1] = RARRAY(y)->ptr[i];
+	tmp[1] = RARRAY_PTR(y)[i];
 	bdb1_put(2, tmp, obj);
 	dbst->len++;
     }
@@ -593,9 +593,13 @@ bdb1_sary_select(argc, argv, obj)
 	}
 	return bdb1_each_vc(obj, Qfalse, Qtrue);
     }
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_VALUES_AT
     rb_warn("Recnum#%s is deprecated; use Recnum#values_at",
+#if HAVE_RB_FRAME_THIS_FUNC
+	    rb_id2name(rb_frame_this_func()));
+#else
 	    rb_id2name(rb_frame_last_func()));
+#endif
 #endif
     return bdb1_sary_values_at(argc, argv, obj);
 }
@@ -608,9 +612,13 @@ bdb1_sary_indexes(argc, argv, obj)
     VALUE indexes;
     int i;
 
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_VALUES_AT
     rb_warn("Recnum#%s is deprecated; use Recnum#values_at",
+#if HAVE_RB_FRAME_THIS_FUNC
+	    rb_id2name(rb_frame_this_func()));
+#else
 	    rb_id2name(rb_frame_last_func()));
+#endif
 #endif
     return bdb1_sary_select(argc, argv, obj);
 }
@@ -783,8 +791,8 @@ bdb1_sary_cmp(obj, obj2)
     len = dbst->len;
     if (!rb_obj_is_kind_of(obj2, bdb1_cRecnum)) {
 	obj2 = rb_convert_type(obj2, T_ARRAY, "Array", "to_ary");
-	if (len > RARRAY(obj2)->len) {
-	    len = RARRAY(obj2)->len;
+	if (len > RARRAY_LEN(obj2)) {
+	    len = RARRAY_LEN(obj2);
 	}
 	ary = Qtrue;
     }
@@ -799,7 +807,7 @@ bdb1_sary_cmp(obj, obj2)
 	tmp = INT2NUM(i);
 	a = bdb1_get(1, &tmp, obj);
 	if (ary) {
-	    a2 = RARRAY(obj2)->ptr[i];
+	    a2 = RARRAY_PTR(obj2)[i];
 	}
 	else {
 	    a2 = bdb1_get(1, &tmp, obj2);
@@ -809,7 +817,7 @@ bdb1_sary_cmp(obj, obj2)
 	    return tmp;
 	}
     }
-    len = dbst->len - (ary?RARRAY(obj2)->len:dbst2->len);
+    len = dbst->len - (ary?RARRAY_LEN(obj2):dbst2->len);
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);
     return INT2FIX(-1);
@@ -971,7 +979,7 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "pop", bdb1_sary_pop, 0);
     rb_define_method(bdb1_cRecnum, "shift", bdb1_sary_shift, 0);
     rb_define_method(bdb1_cRecnum, "unshift", bdb1_sary_unshift_m, -1);
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_INSERT
     rb_define_method(bdb1_cRecnum, "insert", bdb1_sary_insert, -1);
 #endif
     rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, 0);
@@ -988,9 +996,13 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "reverse!", bdb1_sary_reverse_bang, 0);
     rb_define_method(bdb1_cRecnum, "collect", bdb1_sary_collect, 0);
     rb_define_method(bdb1_cRecnum, "collect!", bdb1_sary_collect_bang, 0);
-#if RUBY_VERSION_CODE >= 172
+#if HAVE_RB_ARY_MAP
     rb_define_method(bdb1_cRecnum, "map", bdb1_sary_collect, 0);
+#endif
+#if HAVE_RB_ARY_VALUES_AT
     rb_define_method(bdb1_cRecnum, "values_at", bdb1_sary_values_at, -1);
+#endif
+#if HAVE_RB_ARY_SELECT
     rb_define_method(bdb1_cRecnum, "select", bdb1_sary_select, -1);
 #endif
     rb_define_method(bdb1_cRecnum, "map!", bdb1_sary_collect_bang, 0);

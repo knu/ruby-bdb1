@@ -26,6 +26,20 @@ if enable_config("shared", true)
    $static = nil
 end
 
+["rb_frame_this_func", "rb_block_call"].each do |f|
+   have_func(f)
+end
+
+["insert", "values_at", "map", "select"].each do |f|
+   print "checking for Array##{f}... "
+   if [].respond_to?(f)
+      puts "yes"
+      $CFLAGS += " -DHAVE_RB_ARY_#{f.upcase}"
+   else
+      puts "no"
+   end
+end
+
 create_makefile("bdb1")
 
 begin

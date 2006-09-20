@@ -33,7 +33,7 @@ db.close
 
 db = BDB1::Btree.open "basic", $option
 db.each do |k, v|
-   if k[-1] != 0 || v[-1] != 0
+   if k[-1].to_i != 0 || v[-1].to_i != 0
       print "ERROR : #{k.inspect} -- #{v.inspect}\n"
    end
 end

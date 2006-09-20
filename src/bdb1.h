@@ -1,12 +1,27 @@
 #include <ruby.h>
-#include <version.h>
 
-#if RUBY_VERSION_CODE < 180
+#ifndef StringValue
 #define StringValue(x,y) do {				\
     if (TYPE(x) != T_STRING) x = rb_str_to_str(x);	\
 } while(0)
+#endif
+
+#ifndef StringValuePtr
 #define StringValuePtr(x) STR2CSTR(x)
+#endif
+
+#ifndef SafeStringValue
 #define SafeStringValue(x) Check_SafeStr(x)
+#endif
+
+#ifndef RSTRING_PTR
+# define RSTRING_PTR(x_) RSTRING(x_)->ptr
+# define RSTRING_LEN(x_) RSTRING(x_)->len
+#endif
+
+#ifndef RARRAY_PTR
+# define RARRAY_PTR(x_) RARRAY(x_)->ptr
+# define RARRAY_LEN(x_) RARRAY(x_)->len
 #endif
 
 #ifdef COMPAT185
