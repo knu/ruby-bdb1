@@ -135,7 +135,7 @@ bdb1_test_load(obj, a, type_kv)
 	res = rb_str_new(a->data, a->size);
 	if (dbst->filter[2 + type_kv]) {
 	    if (FIXNUM_P(dbst->filter[2 + type_kv])) {
-		res = rb_funcall(obj, 
+		res = rb_funcall(obj,
 				 NUM2INT(dbst->filter[2 + type_kv]), 1, res);
 	    }
 	    else {
@@ -153,7 +153,7 @@ bdb1_test_load(obj, a, type_kv)
 	    res = rb_tainted_str_new(a->data, a->size);
 	    if (dbst->filter[2 + type_kv]) {
 		if (FIXNUM_P(dbst->filter[2 + type_kv])) {
-		    res = rb_funcall(obj, 
+		    res = rb_funcall(obj,
 				     NUM2INT(dbst->filter[2 + type_kv]),
 				     1, res);
 		}
@@ -175,11 +175,11 @@ test_load_dyna(obj, key, val)
     bdb1_DB *dbst;
     VALUE del, res, tmp;
     struct deleg_class *delegst;
-    
+
     Data_Get_Struct(obj, bdb1_DB, dbst);
     res = bdb1_test_load(obj, val, FILTER_VALUE);
     if (dbst->marshal && !SPECIAL_CONST_P(res)) {
-	del = Data_Make_Struct(bdb1_cDelegate, struct deleg_class, 
+	del = Data_Make_Struct(bdb1_cDelegate, struct deleg_class,
 			       bdb1_deleg_mark, bdb1_deleg_free, delegst);
 	delegst->db = obj;
 	if (dbst->type == DB_RECNO) {
@@ -214,7 +214,7 @@ bdb1_bt_compare(a, b)
     else
 	res = rb_funcall(dbst->bt_compare, bdb1_id_call, 2, av, bv);
     return NUM2INT(res);
-} 
+}
 
 static size_t
 bdb1_bt_prefix(a, b)
@@ -234,7 +234,7 @@ bdb1_bt_prefix(a, b)
     else
 	res = rb_funcall(dbst->bt_prefix, bdb1_id_call, 2, av, bv);
     return NUM2INT(res);
-} 
+}
 
 static u_int32_t
 bdb1_h_hash(bytes, length)
@@ -483,15 +483,15 @@ bdb1_i185_common(obj, dbstobj)
     options = StringValuePtr(key);
     if (strcmp(options, "marshal") == 0) {
         switch (value) {
-        case Qtrue: 
+        case Qtrue:
 	    dbst->marshal = bdb1_mMarshal;
 	    dbst->options |= BDB1_MARSHAL;
 	    break;
-        case Qfalse: 
+        case Qfalse:
 	    dbst->marshal = Qfalse;
 	    dbst->options &= ~BDB1_MARSHAL;
 	    break;
-        default: 
+        default:
 	    if (!RTEST(bdb1_load_dump(value))) {
 		rb_raise(bdb1_eFatal, "marshal value must be true or false");
 	    }
@@ -545,6 +545,104 @@ bdb1_hard_count(dbp)
     return count;
 }
 
+/*
+ * call-seq:
+ *
+ *   BDB1::Btree.new(name = nil, flags = "r", mode = 0, options = {})
+ *   BDB1::Hash.new(name = nil, flags = "r", mode = 0, options = {})
+ *   BDB1::Recnum.new(name = nil, flags = "r", mode = 0, options = {})
+ *
+ * Open the database.
+ *
+ * * +name+
+ *   The argument name is used as the name of a single physical
+ *   file on disk that will be used to back the database.
+ *
+ *   If +nil+ is given, an on-memory database is created.
+ *
+ * * +flags+
+ *   The flags must be the string "r", "r+", "w", "w+", "a", "a+" or
+ *   and integer value.
+ *
+ *   The flags value must be set to 0 or by bitwise inclusively
+ *   OR'ing together one or more of the following values
+ *
+ *   * +BDB1::CREATE+
+ *     Create any underlying files, as necessary. If the files
+ *     do not already exist and the DB_CREATE flag is not
+ *     specified, the call will fail.
+ *
+ *   * +BDB1::RDONLY+
+ *     Open the database for reading only. Any attempt to
+ *     modify items in the database will fail regardless of the
+ *     actual permissions of any underlying files.
+ *
+ *   * +BDB1::TRUNCATE+
+ *     Physically truncate the underlying database file,
+ *     discarding all previous subdatabases or databases.
+ *     Underlying filesystem primitives are used to implement
+ *     this flag. For this reason it is only applicable to the
+ *     physical database file and cannot be used to discard
+ *     subdatabases.
+ *
+ *     The DB_TRUNCATE flag cannot be transaction protected,
+ *     and it is an error to specify it in a transaction
+ *     protected environment.
+ *
+ *   * +BDB1::WRITE+
+ *     Open the database for writing. Without this flag, any
+ *     attempt to modify items in the database will fail.
+ *
+ * * +mode+
+ *   mode to create the file
+ *
+ * * +options+
+ *   Hash, Possible options are (see the documentation of Berkeley DB
+ *   for more informations)
+ *
+ *   * +set_flags+: general database configuration
+ *   * +set_cachesize+: set the database cache size
+ *   * +set_pagesize+: set the underlying database page size
+ *   * +set_lorder+: set the database byte order
+ *   * +set_store_key+: specify a Proc called before a key is stored
+ *   * +set_fetch_key+: specify a Proc called after a key is read
+ *   * +set_store_value+: specify a Proc called before a value is stored
+ *   * +set_fetch_value+: specify a Proc called after a value is read
+ *
+ * * +options specific to BDB1::Btree+
+ *
+ *   * +set_bt_compare+: specify a Btree comparison function
+ *   * +set_bt_minkey+: set the minimum number of keys per Btree page
+ *   * +set_bt_prefix+: specify a Btree prefix comparison function
+ *
+ * * +options specific to BDB1::Hash+
+ *
+ *   * +set_h_ffactor+: set the Hash table density
+ *   * +set_h_hash+: specify a hashing function
+ *   * +set_h_nelem+: set the Hash table size
+ *
+ * * +options specific to BDB1::Recnum+
+ *
+ *   * +set_re_delim+: set the variable-length record delimiter
+ *   * +set_re_len+: set the fixed-length record length
+ *   * +set_re_pad+: set the fixed-length record pad byte
+ *
+ *   Proc given to +set_bt_compare+, +set_bt_prefix+,
+ *   +set_h_hash+, +set_store_key+, +set_fetch_key+,
+ *   +set_store_value+ and +set_fetch_value+ can be also
+ *   specified as a method (replace the prefix +set_+ with
+ *   +bdb1_+)
+ *
+ *   For example:
+ *
+ *     module BDB1
+ *       class Btreesort < Btree
+ *         def bdb1_bt_compare(a, b)
+ *           b.downcase <=> a.downcase
+ *         end
+ *       end
+ *     end
+ */
 VALUE
 bdb1_init(argc, argv, obj)
     int argc;
@@ -653,6 +751,12 @@ bdb1_init(argc, argv, obj)
     return obj;
 }
 
+/*
+ * call-seq:
+ *   db.close(flags = 0)
+ *
+ * Closes the file.
+ */
 static VALUE
 bdb1_close(obj)
     VALUE obj;
@@ -680,11 +784,11 @@ bdb1_s_alloc(obj)
     cl = obj;
     while (cl) {
 	if (cl == bdb1_cBtree || RCLASS(cl)->m_tbl == RCLASS(bdb1_cBtree)->m_tbl) {
-	    dbst->type = DB_BTREE; 
+	    dbst->type = DB_BTREE;
 	    break;
 	}
 	else if (cl == bdb1_cHash || RCLASS(cl)->m_tbl == RCLASS(bdb1_cHash)->m_tbl) {
-	    dbst->type = DB_HASH; 
+	    dbst->type = DB_HASH;
 	    break;
 	}
 	else if (cl == bdb1_cRecnum || RCLASS(cl)->m_tbl == RCLASS(bdb1_cRecnum)->m_tbl) {
@@ -715,8 +819,11 @@ bdb1_s_alloc(obj)
     return res;
 }
 
+/*
+ * Same as +new+.
+ */
 static VALUE
-bdb1_s_new(argc, argv, obj)
+bdb1_s_create(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -737,10 +844,22 @@ bdb1_i_create(obj, db)
     tmp[1] = rb_ary_entry(obj, 1);
     bdb1_put(2, tmp, db);
     return Qnil;
-} 
+}
 
+/*
+ * call-seq:
+ *   BDB1::Btree[hash]
+ *   BDB1::Btree[key1, value1, key2, value2, ...]
+ *   BDB1::Hash[hash]
+ *   BDB1::Hash[key1, value1, key2, value2, ...]
+ *   BDB1::Recnum[hash]
+ *   BDB1::Recnum[key1, value1, key2, value2, ...]
+ *
+ * Creates a new temporary on-memory database, populated with the
+ * given hash or pairs of objects.
+ */
 static VALUE
-bdb1_s_create(argc, argv, obj)
+bdb1_s_aref(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -762,6 +881,10 @@ bdb1_s_create(argc, argv, obj)
     return res;
 }
 
+/*
+ * Same as +new+ except that if a block is given it is called with an
+ * initialized object which is automatically closed when done.
+ */
 static VALUE
 bdb1_s_open(argc, argv, obj)
     int argc;
@@ -775,6 +898,16 @@ bdb1_s_open(argc, argv, obj)
     return res;
 }
 
+/*
+ * call-seq:
+ *   db.put(key, value, flags = 0)
+ *
+ * Stores the +value+ associating with +key+ and returns the value
+ * stored.
+ *
+ * +flags+ can have the value +DBD::NOOVERWRITE+, in this case it will
+ * return +nil+ if the specified key exist, otherwise +true+.
+ */
 VALUE
 bdb1_put(argc, argv, obj)
     int argc;
@@ -836,7 +969,7 @@ bdb1_assoc(obj, key, data)
     VALUE obj;
     DBT *key, *data;
 {
-    return rb_assoc_new(test_load_key(obj, key), 
+    return rb_assoc_new(test_load_key(obj, key),
 			bdb1_test_load(obj, data, FILTER_VALUE));
 }
 
@@ -845,7 +978,7 @@ bdb1_assoc_dyna(obj, key, data)
     VALUE obj;
     DBT *key, *data;
 {
-    return rb_assoc_new(test_load_key(obj, key), 
+    return rb_assoc_new(test_load_key(obj, key),
 			test_load_dyna(obj, key, data));
 }
 
@@ -899,6 +1032,13 @@ bdb1_get(argc, argv, obj)
     return bdb1_get_internal(argc, argv, obj, Qnil, 0);
 }
 
+/*
+ * call-seq:
+ *   db[key]
+ *   db[key, flags = 0]
+ *
+ * Returns the value corresponding to +key+.
+ */
 static VALUE
 bdb1_get_dyna(argc, argv, obj)
     int argc;
@@ -940,6 +1080,12 @@ bdb1_has_key(obj, key)
     return bdb1_get_internal(1, &key, obj, Qfalse);
 }
 
+/*
+ * call-seq:
+ *   db.has_both?(key, value)
+ *
+ * Returns +true+ if the association from +key+ is +value+.
+ */
 static VALUE
 bdb1_has_both(obj, a, b)
     VALUE obj, a, b;
@@ -976,6 +1122,15 @@ bdb1_has_both(obj, a, b)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   db.delete(key)
+ *
+ * Removes the association from the +key+. 
+ *
+ * It returns the object deleted or +nil+ if the specified key doesn't
+ * exist.
+ */
 VALUE
 bdb1_del(obj, a)
     VALUE a, obj;
@@ -1112,7 +1267,7 @@ bdb1_each_valuec(obj, sens, result)
     int ret, flags;
     db_recno_t recno;
     VALUE interm, rest;
-    
+
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
@@ -1144,7 +1299,7 @@ bdb1_each_keyc(obj, sens)
     DBT key, data;
     int ret, flags;
     db_recno_t recno;
-    
+
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
@@ -1172,7 +1327,7 @@ bdb1_each_common(obj, sens)
     DBT key, data;
     int ret, flags;
     db_recno_t recno;
-    
+
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
@@ -1220,7 +1375,7 @@ bdb1_to_type(obj, result, flag)
 	    break;
 	case T_HASH:
 	    if (flag == Qtrue) {
-		rb_hash_aset(result, test_load_key(obj, &key), 
+		rb_hash_aset(result, test_load_key(obj, &key),
 			     bdb1_test_load(obj, &data, FILTER_VALUE));
 	    }
 	    else {
@@ -1276,7 +1431,7 @@ bdb1_each_kv(obj, a, result, flag)
 	    memcmp(keys.data, key.data, key.size) != 0) {
 	    return (result == Qnil)?obj:result;
 	}
-	k =  bdb1_test_load(obj, &data, FILTER_VALUE); 
+	k =  bdb1_test_load(obj, &data, FILTER_VALUE);
 	if (RTEST(flag)) {
 	    k = rb_assoc_new(test_load_key(obj, &key), k);
 	}
@@ -1291,6 +1446,14 @@ bdb1_each_kv(obj, a, result, flag)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *   db.duplicates(key, assoc = true)
+ *
+ * Returns an array of all duplicate associations for the +key+.
+ *
+ * If +assoc+ is +false+ return only the values.
+ */
 static VALUE
 bdb1_bt_duplicates(argc, argv, obj)
     int argc;
@@ -1304,6 +1467,12 @@ bdb1_bt_duplicates(argc, argv, obj)
     return bdb1_each_kv(obj, a, rb_ary_new(), b);
 }
 
+/*
+ * call-seq:
+ *   db.each_dup(key)
+ *
+ * Iterates over duplicate associations for the +key+.
+ */
 static VALUE
 bdb1_bt_dup(obj, a)
     VALUE a, obj;
@@ -1311,6 +1480,12 @@ bdb1_bt_dup(obj, a)
     return bdb1_each_kv(obj, a, Qnil, Qtrue);
 }
 
+/*
+ * call-seq:
+ *   db.each_dup_value(key)
+ *
+ * Iterates over duplicate values for the +key+.
+ */
 static VALUE
 bdb1_bt_dupval(obj, a)
     VALUE a, obj;
@@ -1324,7 +1499,7 @@ bdb1_reject(obj)
 {
     return rb_hash_delete_if(bdb1_to_hash(obj));
 }
- 
+
 static VALUE
 bdb1_values(obj)
     VALUE obj;
@@ -1374,7 +1549,7 @@ bdb1_internal_value(obj, a, b, sens)
 	flags = sens;
 	if (rb_equal(a, bdb1_test_load(obj, &data, FILTER_VALUE)) == Qtrue) {
 	    VALUE d;
-	    
+
 	    d = (b == Qfalse)?Qtrue:test_load_key(obj, &key);
 	    FREE_KEY(dbst, key);
 	    return  d;
@@ -1511,7 +1686,7 @@ bdb1_each_vc(obj, replace, rtest)
     int ret, flags;
     db_recno_t recno;
     VALUE res, result, val;
-    
+
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
@@ -1543,6 +1718,36 @@ bdb1_each_vc(obj, replace, rtest)
     return Qnil;
 }
 
+/*
+ * This interface if for the version 1.85 and 1.86 of Berkeley DB (for
+ * Berkeley version >= 2 see bdb)
+ *
+ * Developers may choose to store data in any of several different
+ * storage structures to satisfy the requirements of a particular
+ * application.  In database terminology, these storage structures and
+ * the code that operates on them are called access methods.
+ *
+ * The library includes support for the following access methods:
+ *
+ * * BDB1::Btree
+ *
+ *     B+tree: Stores keys in sorted order, using a default function
+ *     that does lexicographical ordering of keys.
+ *
+ * * BDB1::Hash
+ *
+ *     Hashing: Stores records in a hash table for fast searches based
+ *     on strict equality, using a default that hashes on the key as a
+ *     bit string.  Extended Linear Hashing modifies the hash function
+ *     used by the table as new records are inserted, in order to keep
+ *     buckets underfull in the steady state.
+ *
+ * * BDB1::Recnum
+ *
+ *     Fixed and Variable-Length Records.  Stores fixed- or
+ *     variable-length records in sequential order.
+ *
+ */
 void
 Init_bdb1()
 {
@@ -1582,17 +1787,16 @@ Init_bdb1()
     rb_define_const(bdb1_mDb, "NOOVERWRITE", INT2FIX(DB_NOOVERWRITE));
 /* DATABASE */
     bdb1_cCommon = rb_define_class_under(bdb1_mDb, "Common", rb_cObject);
-    rb_define_private_method(bdb1_cCommon, "initialize", bdb1_init, -1);
+    rb_define_method(bdb1_cCommon, "initialize", bdb1_init, -1);
     rb_include_module(bdb1_cCommon, rb_mEnumerable);
 #ifdef HAVE_RB_DEFINE_ALLOC_FUNC
     rb_define_alloc_func(bdb1_cCommon, bdb1_s_alloc);
 #else
     rb_define_singleton_method(bdb1_cCommon, "allocate", bdb1_s_alloc, 0);
 #endif
-    rb_define_singleton_method(bdb1_cCommon, "new", bdb1_s_new, -1);
-    rb_define_singleton_method(bdb1_cCommon, "create", bdb1_s_new, -1);
+    rb_define_singleton_method(bdb1_cCommon, "create", bdb1_s_create, -1);
     rb_define_singleton_method(bdb1_cCommon, "open", bdb1_s_open, -1);
-    rb_define_singleton_method(bdb1_cCommon, "[]", bdb1_s_create, -1);
+    rb_define_singleton_method(bdb1_cCommon, "[]", bdb1_s_aref, -1);
     rb_define_method(bdb1_cCommon, "close", bdb1_close, 0);
     rb_define_method(bdb1_cCommon, "db_close", bdb1_close, 0);
     rb_define_method(bdb1_cCommon, "put", bdb1_put, -1);

@@ -23,7 +23,7 @@ bdb1_recnum_init(argc, argv, obj)
 	rb_hash_aset(argv[argc - 1], sarray, INT2FIX(0));
     }
     return bdb1_init(argc, argv, obj);
-} 
+}
 
 static VALUE
 bdb1_sary_subseq(obj, beg, len)
@@ -69,6 +69,31 @@ bdb1_sary_entry(obj, position)
     return bdb1_get(1, &position, obj);
 }
 
+/*
+ * call-seq:
+ *   db[nth]
+ *   db[start..end]
+ *   db[start, length]
+ *
+ * Element reference - with the following syntax:
+ *
+ * * db[nth]
+ *   Retrieves the +nth+ item from an array.  Index starts from zero.
+ *   If index is the negative, counts backward from the end of the
+ *   array.  The index of the last element is -1. Returns +nil+, if
+ *   the +nth+ element is not exist in the array.
+ *
+ * * db[start..end]
+ *   Returns an array containing the objects from +start+ to +end+,
+ *   including both ends. if end is larger than the length of the
+ *   array, it will be rounded to the length.  If +start+ is out of an
+ *   array range , returns +nil+.  And if +start+ is larger than end
+ *   with in array range, returns empty array ([]).
+
+ * * db[start, length]
+ *   Returns an array containing +length+ items from +start+.  Returns
+ *   +nil+ if +length+ is negative.
+ */
 static VALUE
 bdb1_sary_aref(argc, argv, obj)
     int argc;
@@ -207,6 +232,29 @@ bdb1_sary_replace(obj, beg, len, rpl)
     }
 }
 
+/*
+ * call-seq:
+ *   db[nth] = val
+ *   db[start..end] = val
+ *   db[start, length] = val
+ *
+ * Element assignment - with the following syntax:
+ *
+ * * db[nth]
+ *   Changes the +nth+ element of the array into +val+.  If +nth+ is
+ *   larger than array length, the array shall be extended
+ *   automatically.  Extended region shall be initialized by +nil+.
+ *
+ * * db[start..end]
+ *   Replaces the items from +start+ to +end+ with +val+.  If +val+ is
+ *   not an array, the type of +val+ will be converted into the Array
+ *   using +to_a+ method.
+ *
+ * * db[start, length]
+ *   Replaces the +length+ items from +start+ with +val+.  If +val+ is
+ *   not an array, the type of +val+ will be converted into the Array
+ *   using +to_a+.
+ */
 static VALUE
 bdb1_sary_aset(argc, argv, obj)
     int argc;
@@ -346,7 +394,7 @@ bdb1_sary_fetch(argc, argv, obj)
     pos = INT2NUM(idx);
     return bdb1_get(1, &pos, obj);
 }
-    
+
 
 static VALUE
 bdb1_sary_concat(obj, y)
@@ -366,7 +414,7 @@ bdb1_sary_concat(obj, y)
     }
     return obj;
 }
-    
+
 static VALUE
 bdb1_sary_push(obj, y)
     VALUE obj, y;
@@ -405,7 +453,7 @@ bdb1_sary_push_m(argc, argv, obj)
     }
     return obj;
 }
-    
+
 static VALUE
 bdb1_sary_s_create(argc, argv, obj)
     int argc;
