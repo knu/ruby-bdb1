@@ -49,3 +49,12 @@
 
 * corrected dbst->info (Thanks Matthew Luckie <mjl@luckie.org.nz>)
 * added documentation for ri (make ri-site)
+
+--- 0.2.3
+
+* adapted for ruby 1.9.
+
+--- 0.2.4
+
+* converted rd to rdoc.
+* gemified.
