@@ -1566,29 +1566,6 @@ bdb1_index(obj, a)
     return bdb1_internal_value(obj, a, Qtrue, DB_NEXT);
 }
 
-static VALUE
-bdb1_indexes(argc, argv, obj)
-    int argc;
-    VALUE obj, *argv;
-{
-    VALUE indexes;
-    int i;
-
-#if HAVE_RB_ARY_VALUES_AT
-    rb_warn("BDB1#%s is deprecated; use BDB1#values_at",
-#if HAVE_RB_FRAME_THIS_FUNC
-	    rb_id2name(rb_frame_this_func()));
-#else
-	    rb_id2name(rb_frame_last_func()));
-#endif
-#endif
-    indexes = rb_ary_new2(argc);
-    for (i = 0; i < argc; i++) {
-	rb_ary_push(indexes, bdb1_get(1, argv + i, obj));
-    }
-    return indexes;
-}
-
 VALUE
 bdb1_has_value(obj, a)
     VALUE obj, a;
@@ -1636,8 +1613,6 @@ bdb1_sync(obj)
     return Qtrue;
 }
 
-#if HAVE_RB_ARY_VALUES_AT
-
 static VALUE
 bdb1_values_at(argc, argv, obj)
     int argc;
@@ -1652,29 +1627,17 @@ bdb1_values_at(argc, argv, obj)
     return result;
 }
 
-#endif
-
-#if HAVE_RB_ARY_SELECT
-
 static VALUE
-bdb1_select(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_select(obj)
+    VALUE obj;
 {
     VALUE result = rb_ary_new();
-    long i;
 
     if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
 	return bdb1_each_valuec(obj, DB_NEXT, result);
     }
-    rb_warn("Common#select(index..) is deprecated; use Common#values_at");
-    return bdb1_values_at(argc, argv, obj);
+    rb_raise(rb_eArgError, "block is not given");
 }
-
-#endif
 
 VALUE
 bdb1_each_vc(obj, replace, rtest)
@@ -1789,11 +1752,7 @@ Init_bdb1()
     bdb1_cCommon = rb_define_class_under(bdb1_mDb, "Common", rb_cObject);
     rb_define_method(bdb1_cCommon, "initialize", bdb1_init, -1);
     rb_include_module(bdb1_cCommon, rb_mEnumerable);
-#ifdef HAVE_RB_DEFINE_ALLOC_FUNC
     rb_define_alloc_func(bdb1_cCommon, bdb1_s_alloc);
-#else
-    rb_define_singleton_method(bdb1_cCommon, "allocate", bdb1_s_alloc, 0);
-#endif
     rb_define_singleton_method(bdb1_cCommon, "create", bdb1_s_create, -1);
     rb_define_singleton_method(bdb1_cCommon, "open", bdb1_s_open, -1);
     rb_define_singleton_method(bdb1_cCommon, "[]", bdb1_s_aref, -1);
@@ -1842,14 +1801,8 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "length", bdb1_length, 0);
     rb_define_alias(bdb1_cCommon,  "size", "length");
     rb_define_method(bdb1_cCommon, "index", bdb1_index, 1);
-    rb_define_method(bdb1_cCommon, "indexes", bdb1_indexes, -1);
-    rb_define_method(bdb1_cCommon, "indices", bdb1_indexes, -1);
-#if HAVE_RB_ARY_SELECT
-    rb_define_method(bdb1_cCommon, "select", bdb1_select, -1);
-#endif
-#if HAVE_RB_ARY_VALUES_AT
+    rb_define_method(bdb1_cCommon, "select", bdb1_select, 0);
     rb_define_method(bdb1_cCommon, "values_at", bdb1_values_at, -1);
-#endif
     bdb1_cBtree = rb_define_class_under(bdb1_mDb, "Btree", bdb1_cCommon);
     rb_define_method(bdb1_cBtree, "duplicates", bdb1_bt_duplicates, -1);
     rb_define_method(bdb1_cBtree, "each_dup", bdb1_bt_dup, 1);

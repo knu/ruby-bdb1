@@ -310,8 +310,6 @@ bdb1_sary_aset(argc, argv, obj)
     return argv[1];
 }
 
-#if HAVE_RB_ARY_INSERT
-
 static VALUE
 bdb1_sary_insert(argc, argv, obj)
     int argc;
@@ -337,8 +335,6 @@ bdb1_sary_insert(argc, argv, obj)
     bdb1_sary_replace(obj, pos, 0, rb_ary_new4(argc-1, argv+1));
     return obj;
 }
-
-#endif
 
 static VALUE
 bdb1_sary_at(obj, pos)
@@ -628,47 +624,13 @@ bdb1_sary_values_at(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_select(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_sary_select(obj)
+    VALUE obj;
 {
-    VALUE result;
-    long i;
-
     if (rb_block_given_p()) {
-	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);
-	}
 	return bdb1_each_vc(obj, Qfalse, Qtrue);
     }
-#if HAVE_RB_ARY_VALUES_AT
-    rb_warn("Recnum#%s is deprecated; use Recnum#values_at",
-#if HAVE_RB_FRAME_THIS_FUNC
-	    rb_id2name(rb_frame_this_func()));
-#else
-	    rb_id2name(rb_frame_last_func()));
-#endif
-#endif
-    return bdb1_sary_values_at(argc, argv, obj);
-}
-
-static VALUE
-bdb1_sary_indexes(argc, argv, obj)
-    int argc;
-    VALUE obj, *argv;
-{
-    VALUE indexes;
-    int i;
-
-#if HAVE_RB_ARY_VALUES_AT
-    rb_warn("Recnum#%s is deprecated; use Recnum#values_at",
-#if HAVE_RB_FRAME_THIS_FUNC
-	    rb_id2name(rb_frame_this_func()));
-#else
-	    rb_id2name(rb_frame_last_func()));
-#endif
-#endif
-    return bdb1_sary_select(argc, argv, obj);
+    rb_raise(rb_eArgError, "block is not given");
 }
 
 static VALUE
@@ -1027,9 +989,7 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "pop", bdb1_sary_pop, 0);
     rb_define_method(bdb1_cRecnum, "shift", bdb1_sary_shift, 0);
     rb_define_method(bdb1_cRecnum, "unshift", bdb1_sary_unshift_m, -1);
-#if HAVE_RB_ARY_INSERT
     rb_define_method(bdb1_cRecnum, "insert", bdb1_sary_insert, -1);
-#endif
     rb_define_method(bdb1_cRecnum, "each", bdb1_each_value, 0);
     rb_define_method(bdb1_cRecnum, "each_index", bdb1_sary_each_index, 0);
     rb_define_method(bdb1_cRecnum, "reverse_each", bdb1_each_eulav, 0);
@@ -1038,21 +998,13 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "empty?", bdb1_sary_empty_p, 0);
     rb_define_method(bdb1_cRecnum, "index", bdb1_index, 1);
     rb_define_method(bdb1_cRecnum, "rindex", bdb1_sary_rindex, 1);
-    rb_define_method(bdb1_cRecnum, "indexes", bdb1_sary_indexes, -1);
-    rb_define_method(bdb1_cRecnum, "indices", bdb1_sary_indexes, -1);
     rb_define_method(bdb1_cRecnum, "reverse", bdb1_sary_reverse_m, 0);
     rb_define_method(bdb1_cRecnum, "reverse!", bdb1_sary_reverse_bang, 0);
     rb_define_method(bdb1_cRecnum, "collect", bdb1_sary_collect, 0);
     rb_define_method(bdb1_cRecnum, "collect!", bdb1_sary_collect_bang, 0);
-#if HAVE_RB_ARY_MAP
     rb_define_method(bdb1_cRecnum, "map", bdb1_sary_collect, 0);
-#endif
-#if HAVE_RB_ARY_VALUES_AT
     rb_define_method(bdb1_cRecnum, "values_at", bdb1_sary_values_at, -1);
-#endif
-#if HAVE_RB_ARY_SELECT
-    rb_define_method(bdb1_cRecnum, "select", bdb1_sary_select, -1);
-#endif
+    rb_define_method(bdb1_cRecnum, "select", bdb1_sary_select, 0);
     rb_define_method(bdb1_cRecnum, "map!", bdb1_sary_collect_bang, 0);
     rb_define_method(bdb1_cRecnum, "filter", bdb1_sary_filter, 0);
     rb_define_method(bdb1_cRecnum, "delete", bdb1_sary_delete, 1);

@@ -26,24 +26,6 @@ bdb1_deleg_mark(delegst)
     if (delegst->obj) rb_gc_mark(delegst->obj);
 }
 
-#ifndef HAVE_RB_BLOCK_CALL
-
-static VALUE
-bdb1_deleg_each(tmp)
-    VALUE *tmp;
-{
-    return rb_funcall2(tmp[0], id_send, (int)tmp[1], (VALUE *)tmp[2]);
-}
-
-static VALUE
-bdb1_deleg_yield(i, res)
-    VALUE i, res;
-{
-    return rb_ary_push(res, rb_yield(i));
-}
-
-#endif
-
 static VALUE
 bdb1_deleg_missing(argc, argv, obj)
     int argc;
@@ -55,17 +37,7 @@ bdb1_deleg_missing(argc, argv, obj)
 
     Data_Get_Struct(obj, struct deleg_class, delegst);
     if (rb_block_given_p()) {
-#if HAVE_RB_BLOCK_CALL
 	res = rb_block_call(delegst->obj, id_send, argc, argv, rb_yield, 0);
-#else
-	VALUE tmp[3];
-
-	tmp[0] = delegst->obj;
-	tmp[1] = (VALUE)argc;
-	tmp[2] = (VALUE)argv;
-	res = rb_ary_new();
-	rb_iterate(bdb1_deleg_each, (VALUE)tmp, bdb1_deleg_yield, res);
-#endif
     }
     else {
 	res = rb_funcall2(delegst->obj, id_send, argc, argv);
