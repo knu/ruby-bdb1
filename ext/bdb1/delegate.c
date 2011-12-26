@@ -137,15 +137,31 @@ void bdb1_init_delegator()
     bdb1_cDelegate = rb_define_class_under(bdb1_mDb, "Delegate", rb_cObject);
     {
 	VALUE ary, tmp = Qfalse;
-	char *method;
 	int i;
+	ID  id_eq = rb_intern("=="),
+	    id_eqq = rb_intern("==="),
+	    id_match = rb_intern("=~"),
+	    id_not = rb_intern("!"),
+	    id_neq = rb_intern("!="),
+	    id_notmatch = rb_intern("!~");
 
 	ary = rb_class_instance_methods(1, &tmp, rb_mKernel);
 	for (i = 0; i < RARRAY_LEN(ary); i++) {
-	    method = StringValuePtr(RARRAY_PTR(ary)[i]);
-	    if (!strcmp(method, "==") ||
-		!strcmp(method, "===") || !strcmp(method, "=~")) continue;
-	    rb_undef_method(bdb1_cDelegate, method);
+	    VALUE method = RARRAY_PTR(ary)[i];
+	    VALUE mid;
+	    if (!SYMBOL_P(method)) {
+		Check_Type(method, T_STRING);
+		mid = rb_intern(RSTRING_PTR(method));
+	    }
+	    else
+		mid = SYM2ID(method);
+	    if (mid == id_eq ||
+		mid == id_eqq ||
+		mid == id_match ||
+		mid == id_not ||
+		mid == id_neq ||
+		mid == id_notmatch) continue;
+	    rb_undef_method(bdb1_cDelegate, rb_id2name(mid));
 	}
     }
     rb_define_method(bdb1_cDelegate, "method_missing", bdb1_deleg_missing, -1);

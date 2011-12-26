@@ -795,7 +795,7 @@ bdb1_s_alloc(obj)
 	    dbst->type = DB_RECNO;
 	    break;
 	}
-	cl = RCLASS(cl)->super;
+	cl = RCLASS_SUPER(cl);
     }
     if (!cl) {
 	rb_raise(bdb1_eFatal, "unknown database type");
