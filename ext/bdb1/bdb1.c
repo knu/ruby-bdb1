@@ -1560,7 +1560,7 @@ bdb1_internal_value(obj, a, b, sens)
 }
 
 VALUE
-bdb1_index(obj, a)
+bdb1_key(obj, a)
     VALUE obj, a;
 {
     return bdb1_internal_value(obj, a, Qtrue, DB_NEXT);
@@ -1800,7 +1800,8 @@ Init_bdb1()
     rb_define_method(bdb1_cCommon, "empty?", bdb1_empty, 0);
     rb_define_method(bdb1_cCommon, "length", bdb1_length, 0);
     rb_define_alias(bdb1_cCommon,  "size", "length");
-    rb_define_method(bdb1_cCommon, "index", bdb1_index, 1);
+    rb_define_method(bdb1_cCommon, "key", bdb1_key, 1);
+    rb_define_method(bdb1_cCommon, "index", bdb1_key, 1);
     rb_define_method(bdb1_cCommon, "select", bdb1_select, 0);
     rb_define_method(bdb1_cCommon, "values_at", bdb1_values_at, -1);
     bdb1_cBtree = rb_define_class_under(bdb1_mDb, "Btree", bdb1_cCommon);

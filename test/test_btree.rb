@@ -251,7 +251,7 @@ class TestBtree < Test::Unit::TestCase
 
   def test_04_btree
     sub_btree_delete_2
-    sub_index
+    sub_key
     sub_convert
     sub_sh
     sub_sh_call
@@ -268,13 +268,13 @@ class TestBtree < Test::Unit::TestCase
     intern_btree_delete
   end
 
-  def sub_index
+  def sub_key
     lines = @hash.keys
     array = []
     10.times do
       h = lines[rand(lines.size - 1)]
       array.push h
-      assert_equal(@hash.index(h.reverse), @bdb.index(h.reverse), "<index>")
+      assert_equal(@hash.key(h.reverse), @bdb.key(h.reverse), "<index>")
     end
     assert_equal(@hash.values_at(array), @bdb.values_at(array), "<values_at>")
   end

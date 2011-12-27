@@ -996,7 +996,8 @@ void bdb1_init_recnum()
     rb_define_method(bdb1_cRecnum, "length", bdb1_sary_length, 0);
     rb_define_alias(bdb1_cRecnum,  "size", "length");
     rb_define_method(bdb1_cRecnum, "empty?", bdb1_sary_empty_p, 0);
-    rb_define_method(bdb1_cRecnum, "index", bdb1_index, 1);
+    rb_define_method(bdb1_cRecnum, "key", bdb1_key, 1);
+    rb_define_method(bdb1_cRecnum, "index", bdb1_key, 1);
     rb_define_method(bdb1_cRecnum, "rindex", bdb1_sary_rindex, 1);
     rb_define_method(bdb1_cRecnum, "reverse", bdb1_sary_reverse_m, 0);
     rb_define_method(bdb1_cRecnum, "reverse!", bdb1_sary_reverse_bang, 0);

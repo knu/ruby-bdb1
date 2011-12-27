@@ -121,7 +121,7 @@ extern int bdb1_test_error _((int));
 extern VALUE bdb1_each_value _((VALUE));
 extern VALUE bdb1_each_eulav _((VALUE));
 extern VALUE bdb1_each_key _((VALUE));
-extern VALUE bdb1_index _((VALUE, VALUE));
+extern VALUE bdb1_key _((VALUE, VALUE));
 extern VALUE bdb1_has_value _((VALUE, VALUE));
 extern VALUE bdb1_internal_value _((VALUE, VALUE, VALUE, int));
 extern VALUE bdb1_to_type _((VALUE, VALUE, VALUE));
