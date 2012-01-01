@@ -39,7 +39,7 @@ bdb1_test_error(comm)
         error = bdb1_eFatal;
         if (bdb1_errcall) {
             bdb1_errcall = 0;
-            rb_raise(error, "%s -- %s", StringValuePtr(bdb1_errstr), db_strerror(comm));
+            rb_raise(error, "%s -- %s", StringValueCStr(bdb1_errstr), db_strerror(comm));
         }
         else
             rb_raise(error, "%s", db_strerror(errno));
@@ -55,7 +55,6 @@ test_dump(obj, key, a, type_kv)
     int type_kv;
 {
     bdb1_DB *dbst;
-    int is_nil = 0;
     VALUE tmp = a;
 
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -78,11 +77,14 @@ test_dump(obj, key, a, type_kv)
     }
     else {
         tmp = rb_obj_as_string(tmp);
-        if (a == Qnil)
-            is_nil = 1;
+        if (NIL_P(a)) {
+	    key->data = StringValueCStr(tmp);
+	    key->size = RSTRING_LEN(tmp) + 1;
+	    return tmp;
+	}
     }
     key->data = StringValuePtr(tmp);
-    key->size = RSTRING_LEN(tmp) + is_nil;
+    key->size = RSTRING_LEN(tmp);
     return tmp;
 }
 
@@ -302,7 +304,7 @@ bdb1_i185_btree(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = StringValuePtr(key);
+    options = StringValueCStr(key);
     if (strcmp(options, "set_flags") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.bi.flags = NUM2INT(value);
@@ -356,7 +358,7 @@ bdb1_i185_hash(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = StringValuePtr(key);
+    options = StringValueCStr(key);
     if (strcmp(options, "set_h_ffactor") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.hi.ffactor = NUM2INT(value);
@@ -397,7 +399,7 @@ bdb1_i185_recno(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = StringValuePtr(key);
+    options = StringValueCStr(key);
     if (strcmp(options, "set_flags") == 0) {
 	dbst->has_info = Qtrue;
 	dbst->info.ri.flags = NUM2INT(value);
@@ -405,7 +407,7 @@ bdb1_i185_recno(obj, dbstobj)
     else if (strcmp(options, "set_re_delim") == 0) {
 	int ch;
 	if (TYPE(value) == T_STRING) {
-	    str = StringValuePtr(value);
+	    str = StringValueCStr(value);
 	    dbst->info.ri.bval = str[0];
 	}
 	else {
@@ -422,7 +424,7 @@ bdb1_i185_recno(obj, dbstobj)
     else if (strcmp(options, "set_re_pad") == 0) {
 	int ch;
 	if (TYPE(value) == T_STRING) {
-	    str = StringValuePtr(value);
+	    str = StringValueCStr(value);
 	    dbst->info.ri.bval = str[0];
 	}
 	else {
@@ -480,7 +482,7 @@ bdb1_i185_common(obj, dbstobj)
     key = rb_ary_entry(obj, 0);
     value = rb_ary_entry(obj, 1);
     key = rb_obj_as_string(key);
-    options = StringValuePtr(key);
+    options = StringValueCStr(key);
     if (strcmp(options, "marshal") == 0) {
         switch (value) {
         case Qtrue:
@@ -668,7 +670,7 @@ bdb1_init(argc, argv, obj)
 	/* ... */
     case 2:
 	if (TYPE(c) == T_STRING) {
-	    char *m = StringValuePtr(c);
+	    char *m = StringValueCStr(c);
 	    if (strcmp(m, "r") == 0) {
 		oflags = DB_RDONLY;
 	    }
@@ -695,7 +697,7 @@ bdb1_init(argc, argv, obj)
     case 1:
 	if (!NIL_P(b)) {
 	    SafeStringValue(b);
-	    name = StringValuePtr(b);
+	    name = StringValueCStr(b);
 	}
 	else {
 	    name = NULL;
