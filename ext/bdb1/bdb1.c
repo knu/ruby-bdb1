@@ -806,16 +806,16 @@ bdb1_s_alloc(obj)
 	dbst->marshal = obj;
 	dbst->options |= BDB1_MARSHAL;
     }
-    if (rb_method_boundp(obj, rb_intern("bdb1_store_key"), 0) == Qtrue) {
+    if (rb_method_boundp(obj, rb_intern("bdb1_store_key"), 0)) {
 	dbst->filter[FILTER_KEY] = INT2FIX(rb_intern("bdb1_store_key"));
     }
-    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_key"), 0) == Qtrue) {
+    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_key"), 0)) {
 	dbst->filter[2 + FILTER_KEY] = INT2FIX(rb_intern("bdb1_fetch_key"));
     }
-    if (rb_method_boundp(obj, rb_intern("bdb1_store_value"), 0) == Qtrue) {
+    if (rb_method_boundp(obj, rb_intern("bdb1_store_value"), 0)) {
 	dbst->filter[FILTER_VALUE] = INT2FIX(rb_intern("bdb1_store_value"));
     }
-    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_value"), 0) == Qtrue) {
+    if (rb_method_boundp(obj, rb_intern("bdb1_fetch_value"), 0)) {
 	dbst->filter[2 + FILTER_VALUE] = INT2FIX(rb_intern("bdb1_fetch_value"));
     }
     return res;
