@@ -1368,7 +1368,7 @@ bdb1_to_type(obj, result, flag)
         }
 	switch (TYPE(result)) {
 	case T_ARRAY:
-	    if (flag == Qtrue) {
+	    if (RTEST(flag)) {
 		rb_ary_push(result, bdb1_assoc(obj, &key, &data));
 	    }
 	    else {
@@ -1376,7 +1376,7 @@ bdb1_to_type(obj, result, flag)
 	    }
 	    break;
 	case T_HASH:
-	    if (flag == Qtrue) {
+	    if (RTEST(flag)) {
 		rb_hash_aset(result, test_load_key(obj, &key),
 			     bdb1_test_load(obj, &data, FILTER_VALUE));
 	    }
@@ -1543,22 +1543,22 @@ bdb1_internal_value(obj, a, b, sens)
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
     flags = (sens == DB_NEXT)?DB_FIRST:DB_LAST;
-    do {
+    for (;;) {
         ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, flags));
 	if (ret == DB_NOTFOUND) {
-	    return (b == Qfalse)?Qfalse:Qnil;
+	    return RTEST(b) ? Qnil : Qfalse;
 	}
 	flags = sens;
-	if (rb_equal(a, bdb1_test_load(obj, &data, FILTER_VALUE)) == Qtrue) {
+	if (RTEST(rb_equal(a, bdb1_test_load(obj, &data, FILTER_VALUE)))) {
 	    VALUE d;
 
-	    d = (b == Qfalse)?Qtrue:test_load_key(obj, &key);
+	    d = RTEST(b) ? test_load_key(obj, &key) : Qtrue;
 	    FREE_KEY(dbst, key);
 	    return  d;
 	}
 	FREE_KEY(dbst, key);
-    } while (1);
-    return (b == Qfalse)?Qfalse:Qnil;
+    }
+    return RTEST(b) ? Qnil : Qfalse;
 }
 
 VALUE
@@ -1674,7 +1674,7 @@ bdb1_each_vc(obj, replace, rtest)
 	else {
 	    rb_ary_push(result, res);
 	}
-	if (replace == Qtrue) {
+	if (RTEST(replace)) {
 	    DATA_ZERO(data);
 	    res = test_dump(obj, &data, res, FILTER_VALUE);
 	    bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, 0));
