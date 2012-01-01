@@ -1079,7 +1079,7 @@ static VALUE
 bdb1_has_key(obj, key)
     VALUE obj, key;
 {
-    return bdb1_get_internal(1, &key, obj, Qfalse);
+    return bdb1_get_internal(1, &key, obj, Qfalse, 0);
 }
 
 /*
