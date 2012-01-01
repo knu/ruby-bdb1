@@ -13,7 +13,7 @@ static ID id_bt_compare, id_bt_prefix, id_h_hash, bdb1_id_call;
 static VALUE bdb1_errstr;
 static int bdb1_errcall = 0;
 
-static char *
+static const char *
 db_strerror(int err)
 {
     if (err == 0)
@@ -533,7 +533,7 @@ bdb1_hard_count(dbp)
 {
     DBT key, data;
     db_recno_t recno;
-    long count = 0;
+    int count = 0;
 
     DATA_ZERO(key);
     key.data = &recno;
