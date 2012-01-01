@@ -95,7 +95,7 @@ test_ret(obj, tmp, a, type_kv)
 {
     bdb1_DB *dbst;
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    if (dbst->marshal || a == Qnil) {
+    if (dbst->marshal || NIL_P(a)) {
 	return a;
     }
     if (dbst->filter[type_kv]) {
@@ -205,7 +205,7 @@ bdb1_bt_compare(a, b)
     VALUE obj, av, bv, res;
     bdb1_DB *dbst;
 
-    if ((obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db)) == Qnil) {
+    if (NIL_P(obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db))) {
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -225,7 +225,7 @@ bdb1_bt_prefix(a, b)
     VALUE obj, av, bv, res;
     bdb1_DB *dbst;
 
-    if ((obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db)) == Qnil) {
+    if (NIL_P(obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db))) {
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -246,7 +246,7 @@ bdb1_h_hash(bytes, length)
     VALUE obj, st, res;
     bdb1_DB *dbst;
 
-    if ((obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db)) == Qnil) {
+    if (NIL_P(obj = rb_thread_local_aref(rb_thread_current(), bdb1_id_current_db))) {
 	rb_raise(bdb1_eFatal, "BUG : current_db not set");
     }
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -687,7 +687,7 @@ bdb1_init(argc, argv, obj)
 		rb_raise(bdb1_eFatal, "flags must be r, r+, w, w+, a or a+");
 	    }
 	}
-	else if (c == Qnil) {
+	else if (NIL_P(c)) {
 	    oflags = DB_RDONLY;
 	}
 	else {
@@ -1360,7 +1360,7 @@ bdb1_to_type(obj, result, flag)
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
-    flags = (flag == Qnil)?DB_LAST:DB_FIRST;
+    flags = NIL_P(flag) ? DB_LAST : DB_FIRST;
     do {
         ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, flags));
         if (ret == DB_NOTFOUND) {
@@ -1385,7 +1385,7 @@ bdb1_to_type(obj, result, flag)
 			     test_load_key(obj, &key));
 	    }
 	}
-	flags = (flag == Qnil)?DB_PREV:DB_NEXT;
+	flags = NIL_P(flag) ? DB_PREV : DB_NEXT;
     } while (1);
     return result;
 }
@@ -1431,7 +1431,7 @@ bdb1_each_kv(obj, a, result, flag)
         ret = bdb1_test_error(dbst->dbp->seq(dbst->dbp, &key, &data, flags));
 	if (ret == DB_NOTFOUND || keys.size != key.size ||
 	    memcmp(keys.data, key.data, key.size) != 0) {
-	    return (result == Qnil)?obj:result;
+	    return NIL_P(result)?obj:result;
 	}
 	k =  bdb1_test_load(obj, &data, FILTER_VALUE);
 	if (RTEST(flag)) {
