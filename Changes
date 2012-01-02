@@ -39,11 +39,11 @@
 * BDB1::Common::[]
 * corrected set_fetch_value
 * new return value for []= (1.8.0)
-* adapted for 1.8.0
+* adapted to 1.8.0
 
 --- 0.1.9
 
-* adapted for 1.8 (minor modifications)
+* adapted to 1.8 (minor modifications)
 
 --- 0.2.2
 
@@ -52,9 +52,13 @@
 
 --- 0.2.3
 
-* adapted for ruby 1.9.0.
+* adapted to ruby 1.9.0.
 
 --- 0.2.4
 
 * converted rd to rdoc.
 * gemified.
+
+--- 0.2.5
+
+* adapted to ruby 1.9.3.
