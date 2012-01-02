@@ -46,7 +46,6 @@ class TestHash < Test::Unit::TestCase
     sub_file_delete
     sub_file_cursor
     sub_file_reopen
-    sub_file_dup
     sub_file_close
   end
 
@@ -132,37 +131,10 @@ class TestHash < Test::Unit::TestCase
 
   def sub_file_reopen
     assert_equal(nil, @bdb.close, "<close>")
-    assert_kind_of(BDB1::Btree, @bdb = BDB1::Btree.open(tmpdir("aa"), "w",
+    assert_kind_of(BDB1::Hash, @bdb = BDB1::Hash.open(tmpdir("aa"), "w",
 	"set_flags" => BDB1::DUP),
       "<reopen with DB_DUP>")
     assert_equal(0, @bdb.size, "<must be 0 after reopen>")
-  end
-
-  def sub_file_dup
-    assert_equal("a", @bdb["0"] = "a", "<set dup>")
-    assert_equal("b", @bdb["0"] = "b", "<set dup>")
-    assert_equal("c", @bdb["0"] = "c", "<set dup>")
-    assert_equal("d", @bdb["0"] = "d", "<set dup>")
-    assert_equal("aa", @bdb["1"] = "aa", "<set dup>")
-    assert_equal("bb", @bdb["1"] = "bb", "<set dup>")
-    assert_equal("cc", @bdb["1"] = "cc", "<set dup>")
-    assert_equal("aaa", @bdb["2"] = "aaa", "<set dup>")
-    assert_equal("bbb", @bdb["2"] = "bbb", "<set dup>")
-    assert_equal("aaaa", @bdb["3"] = "aaaa", "<set dup>")
-    rep = [["a", "b", "c", "d"], ['aa', 'bb', 'cc'], ['aaa', 'bbb'], ['aaaa']]
-    for i in [0, 1, 2, 3]
-      k0, v0 = [], []
-      @bdb.duplicates(i.to_s).each {|k, v| k0 << k; v0 << v}
-      assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
-      assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-      k0, v0 = [], []
-      @bdb.each_dup(i.to_s) {|k, v| k0 << k; v0 << v}
-      assert_equal(k0, [i.to_s] * (4 - i), "<dup key #{i}>")
-      assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-      v0 = []
-      @bdb.each_dup_value(i.to_s) {|v|  v0 << v}
-      assert_equal(v0.sort, rep[i], "<dup val #{i}>")
-    end
   end
 
   def sub_file_close
@@ -193,7 +165,7 @@ class TestHash < Test::Unit::TestCase
     assert_equal(nil, @bdb.close, "<close>")
   end
 
-  def test_04_btree
+  def test_04_hash
     sub_index
     sub_convert
     sub_has
