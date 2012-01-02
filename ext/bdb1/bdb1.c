@@ -880,11 +880,10 @@ bdb1_put(int argc, VALUE *argv, VALUE obj)
 
     rb_secure(4);
     GetDB(obj, dbst);
-    flags = 0;
-    a = b = c = Qnil;
-    if (rb_scan_args(argc, argv, "21", &a, &b, &c) == 3) {
+    if (rb_scan_args(argc, argv, "21", &a, &b, &c) == 3)
         flags = NUM2INT(c);
-    }
+    else
+	flags = 0;
     DATA_ZERO(key);
     DATA_ZERO(data);
     a0 = test_recno(obj, &key, &recno, a);
@@ -892,9 +891,7 @@ bdb1_put(int argc, VALUE *argv, VALUE obj)
     ret = bdb1_test_error(dbst->dbp->put(dbst->dbp, &key, &data, flags));
     if (ret == DB_KEYEXIST)
 	return Qfalse;
-    else {
-	return test_ret(obj, b0, b, FILTER_VALUE);
-    }
+    return test_ret(obj, b0, b, FILTER_VALUE);
 }
 
 static VALUE
