@@ -274,7 +274,11 @@ class TestBtree < Test::Unit::TestCase
     10.times do
       h = lines[rand(lines.size - 1)]
       array.push h
-      assert_equal(@hash.key(h.reverse), @bdb.key(h.reverse), "<index>")
+      if @hash.respond_to?(:key)
+        assert_equal(@hash.key(h.reverse), @bdb.key(h.reverse), "<key>")
+      else
+        assert_equal(@hash.index(h.reverse), @bdb.index(h.reverse), "<index>")
+      end
     end
     assert_equal(@hash.values_at(array), @bdb.values_at(array), "<values_at>")
   end
