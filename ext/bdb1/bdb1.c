@@ -26,8 +26,7 @@ db_strerror(int err)
 }
 
 int
-bdb1_test_error(comm)
-    int comm;
+bdb1_test_error(int comm)
 {
     VALUE error;
 
@@ -48,11 +47,7 @@ bdb1_test_error(comm)
 }
 
 static VALUE
-test_dump(obj, key, a, type_kv)
-    VALUE obj;
-    DBT *key;
-    VALUE a;
-    int type_kv;
+test_dump(VALUE obj, DBT *key, VALUE a, int type_kv)
 {
     bdb1_DB *dbst;
     VALUE tmp = a;
@@ -89,9 +84,7 @@ test_dump(obj, key, a, type_kv)
 }
 
 static VALUE
-test_ret(obj, tmp, a, type_kv)
-    VALUE obj, tmp, a;
-    int type_kv;
+test_ret(VALUE obj, VALUE tmp, VALUE a, int type_kv)
 {
     bdb1_DB *dbst;
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -105,11 +98,7 @@ test_ret(obj, tmp, a, type_kv)
 }
 
 static VALUE
-test_recno(obj, key, recno, a)
-    VALUE obj;
-    DBT *key;
-    db_recno_t *recno;
-    VALUE a;
+test_recno(VALUE obj, DBT *key, db_recno_t *recno, VALUE a)
 {
     bdb1_DB *dbst;
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -123,10 +112,7 @@ test_recno(obj, key, recno, a)
 }
 
 VALUE
-bdb1_test_load(obj, a, type_kv)
-    VALUE obj;
-    DBT *a;
-    int type_kv;
+bdb1_test_load(VALUE obj, const DBT *a, int type_kv)
 {
     VALUE res;
     int i;
@@ -170,9 +156,7 @@ bdb1_test_load(obj, a, type_kv)
 }
 
 static VALUE
-test_load_dyna(obj, key, val)
-    VALUE obj;
-    DBT *key, *val;
+test_load_dyna(VALUE obj, DBT *key, DBT *val)
 {
     bdb1_DB *dbst;
     VALUE del, res, tmp;
@@ -199,8 +183,7 @@ test_load_dyna(obj, key, val)
 
 
 static int
-bdb1_bt_compare(a, b)
-    DBT *a, *b;
+bdb1_bt_compare(const DBT *a, const DBT *b)
 {
     VALUE obj, av, bv, res;
     bdb1_DB *dbst;
@@ -219,8 +202,7 @@ bdb1_bt_compare(a, b)
 }
 
 static size_t
-bdb1_bt_prefix(a, b)
-    DBT *a, *b;
+bdb1_bt_prefix(const DBT *a, const DBT *b)
 {
     VALUE obj, av, bv, res;
     bdb1_DB *dbst;
@@ -239,9 +221,7 @@ bdb1_bt_prefix(a, b)
 }
 
 static u_int32_t
-bdb1_h_hash(bytes, length)
-    void *bytes;
-    u_int32_t length;
+bdb1_h_hash(const void *bytes, size_t length)
 {
     VALUE obj, st, res;
     bdb1_DB *dbst;
@@ -259,8 +239,7 @@ bdb1_h_hash(bytes, length)
 }
 
 static void
-bdb1_i_close(dbst)
-    bdb1_DB *dbst;
+bdb1_i_close(bdb1_DB *dbst)
 {
     if (dbst->dbp != NULL && !(dbst->options & BDB1_NOT_OPEN)) {
 	dbst->options |= BDB1_NOT_OPEN;
@@ -270,16 +249,14 @@ bdb1_i_close(dbst)
 }
 
 static void
-bdb1_free(dbst)
-    bdb1_DB *dbst;
+bdb1_free(bdb1_DB *dbst)
 {
     bdb1_i_close(dbst);
     free(dbst);
 }
 
 static void
-bdb1_mark(dbst)
-    bdb1_DB *dbst;
+bdb1_mark(bdb1_DB *dbst)
 {
     int i;
 
@@ -293,8 +270,7 @@ bdb1_mark(dbst)
 }
 
 static VALUE
-bdb1_i185_btree(obj, dbstobj)
-    VALUE obj, dbstobj;
+bdb1_i185_btree(VALUE obj, VALUE dbstobj)
 {
     VALUE key, value;
     bdb1_DB *dbst;
@@ -347,8 +323,7 @@ bdb1_i185_btree(obj, dbstobj)
 }
 
 static VALUE
-bdb1_i185_hash(obj, dbstobj)
-    VALUE obj, dbstobj;
+bdb1_i185_hash(VALUE obj, VALUE dbstobj)
 {
     VALUE key, value;
     bdb1_DB *dbst;
@@ -388,8 +363,7 @@ bdb1_i185_hash(obj, dbstobj)
 }
 
 static VALUE
-bdb1_i185_recno(obj, dbstobj)
-    VALUE obj, dbstobj;
+bdb1_i185_recno(VALUE obj, VALUE dbstobj)
 {
     VALUE key, value;
     bdb1_DB *dbst;
@@ -458,8 +432,7 @@ bdb1_i185_recno(obj, dbstobj)
 }
 
 static VALUE
-bdb1_load_dump(obj)
-    VALUE obj;
+bdb1_load_dump(VALUE obj)
 {
     VALUE res;
 
@@ -471,8 +444,7 @@ bdb1_load_dump(obj)
 }
 
 static VALUE
-bdb1_i185_common(obj, dbstobj)
-    VALUE obj, dbstobj;
+bdb1_i185_common(VALUE obj, VALUE dbstobj)
 {
     VALUE key, value;
     bdb1_DB *dbst;
@@ -530,8 +502,7 @@ bdb1_i185_common(obj, dbstobj)
 }
 
 static int
-bdb1_hard_count(dbp)
-    DB *dbp;
+bdb1_hard_count(DB *dbp)
 {
     DBT key, data;
     db_recno_t recno;
@@ -646,10 +617,7 @@ bdb1_hard_count(dbp)
  *     end
  */
 VALUE
-bdb1_init(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_init(int argc, VALUE *argv, VALUE obj)
 {
     VALUE b, c, d, f;
     int mode, oflags;
@@ -760,8 +728,7 @@ bdb1_init(argc, argv, obj)
  * Closes the file.
  */
 static VALUE
-bdb1_close(obj)
-    VALUE obj;
+bdb1_close(VALUE obj)
 {
     VALUE opt;
     bdb1_DB *dbst;
@@ -775,8 +742,7 @@ bdb1_close(obj)
 }
 
 VALUE
-bdb1_s_alloc(obj)
-    VALUE obj;
+bdb1_s_alloc(VALUE obj)
 {
     bdb1_DB *dbst;
     VALUE res, cl;
@@ -825,10 +791,7 @@ bdb1_s_alloc(obj)
  * Same as +new+.
  */
 static VALUE
-bdb1_s_create(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_s_create(int argc, VALUE *argv, VALUE obj)
 {
     VALUE st, res;
 
@@ -838,8 +801,7 @@ bdb1_s_create(argc, argv, obj)
 }
 
 static VALUE
-bdb1_i_create(obj, db)
-    VALUE obj, db;
+bdb1_i_create(VALUE obj, VALUE db)
 {
     VALUE tmp[2];
     tmp[0] = rb_ary_entry(obj, 0);
@@ -861,10 +823,7 @@ bdb1_i_create(obj, db)
  * given hash or pairs of objects.
  */
 static VALUE
-bdb1_s_aref(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_s_aref(int argc, VALUE *argv, VALUE obj)
 {
     VALUE res, tmp[2];
     int i;
@@ -888,10 +847,7 @@ bdb1_s_aref(argc, argv, obj)
  * initialized object which is automatically closed when done.
  */
 static VALUE
-bdb1_s_open(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_s_open(int argc, VALUE *argv, VALUE obj)
 {
     VALUE res = rb_funcall2(obj, rb_intern("new"), argc, argv);
     if (rb_block_given_p()) {
@@ -911,10 +867,7 @@ bdb1_s_open(argc, argv, obj)
  * return +nil+ if the specified key exist, otherwise +true+.
  */
 VALUE
-bdb1_put(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_put(int argc, VALUE *argv, VALUE obj)
 {
     volatile VALUE a0 = Qnil;
     volatile VALUE b0 = Qnil;
@@ -944,8 +897,7 @@ bdb1_put(argc, argv, obj)
 }
 
 static VALUE
-bdb1_assign(obj, a, b)
-    VALUE obj, a, b;
+bdb1_assign(VALUE obj, VALUE a, VALUE b)
 {
     VALUE tmp[2];
     tmp[0] = a;
@@ -955,9 +907,7 @@ bdb1_assign(obj, a, b)
 }
 
 static VALUE
-test_load_key(obj, key)
-    VALUE obj;
-    DBT *key;
+test_load_key(VALUE obj, DBT *key)
 {
     bdb1_DB *dbst;
     Data_Get_Struct(obj, bdb1_DB, dbst);
@@ -967,30 +917,21 @@ test_load_key(obj, key)
 }
 
 static VALUE
-bdb1_assoc(obj, key, data)
-    VALUE obj;
-    DBT *key, *data;
+bdb1_assoc(VALUE obj, DBT *key, DBT *data)
 {
     return rb_assoc_new(test_load_key(obj, key),
 			bdb1_test_load(obj, data, FILTER_VALUE));
 }
 
 static VALUE
-bdb1_assoc_dyna(obj, key, data)
-    VALUE obj;
-    DBT *key, *data;
+bdb1_assoc_dyna(VALUE obj, DBT *key, DBT *data)
 {
     return rb_assoc_new(test_load_key(obj, key),
 			test_load_dyna(obj, key, data));
 }
 
 static VALUE
-bdb1_get_internal(argc, argv, obj, notfound, dyna)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
-    VALUE notfound;
-    int dyna;
+bdb1_get_internal(int argc, VALUE *argv, VALUE obj, VALUE notfound, int dyna)
 {
     volatile VALUE a = Qnil;
     VALUE b, c;
@@ -1026,10 +967,7 @@ bdb1_get_internal(argc, argv, obj, notfound, dyna)
 }
 
 VALUE
-bdb1_get(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_get(int argc, VALUE *argv, VALUE obj)
 {
     return bdb1_get_internal(argc, argv, obj, Qnil, 0);
 }
@@ -1042,18 +980,13 @@ bdb1_get(argc, argv, obj)
  * Returns the value corresponding to +key+.
  */
 static VALUE
-bdb1_get_dyna(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_get_dyna(int argc, VALUE *argv, VALUE obj)
 {
     return bdb1_get_internal(argc, argv, obj, Qnil, 1);
 }
 
 static VALUE
-bdb1_fetch(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_fetch(int argc, VALUE *argv, VALUE obj)
 {
     VALUE key, if_none;
     VALUE val;
@@ -1076,8 +1009,7 @@ bdb1_fetch(argc, argv, obj)
 }
 
 static VALUE
-bdb1_has_key(obj, key)
-    VALUE obj, key;
+bdb1_has_key(VALUE obj, VALUE key)
 {
     return bdb1_get_internal(1, &key, obj, Qfalse, 0);
 }
@@ -1089,8 +1021,7 @@ bdb1_has_key(obj, key)
  * Returns +true+ if the association from +key+ is +value+.
  */
 static VALUE
-bdb1_has_both(obj, a, b)
-    VALUE obj, a, b;
+bdb1_has_both(VALUE obj, VALUE a, VALUE b)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1134,8 +1065,7 @@ bdb1_has_both(obj, a, b)
  * exist.
  */
 VALUE
-bdb1_del(obj, a)
-    VALUE a, obj;
+bdb1_del(VALUE obj, VALUE a)
 {
     bdb1_DB *dbst;
     DBT key;
@@ -1158,8 +1088,7 @@ bdb1_del(obj, a)
 }
 
 static VALUE
-bdb1_empty(obj)
-    VALUE obj;
+bdb1_empty(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1178,8 +1107,7 @@ bdb1_empty(obj)
 }
 
 static VALUE
-bdb1_delete_if(obj)
-    VALUE obj;
+bdb1_delete_if(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data, save;
@@ -1205,8 +1133,7 @@ bdb1_delete_if(obj)
 }
 
 VALUE
-bdb1_clear(obj)
-    VALUE obj;
+bdb1_clear(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data, save;
@@ -1231,8 +1158,7 @@ bdb1_clear(obj)
 }
 
 static VALUE
-bdb1_length(obj)
-    VALUE obj;
+bdb1_length(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1260,9 +1186,7 @@ bdb1_length(obj)
 }
 
 static VALUE
-bdb1_each_valuec(obj, sens, result)
-    VALUE obj, result;
-    int sens;
+bdb1_each_valuec(VALUE obj, VALUE sens, VALUE result)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1289,13 +1213,20 @@ bdb1_each_valuec(obj, sens, result)
     } while (1);
 }
 
-VALUE bdb1_each_value(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_NEXT, Qnil); }
-VALUE bdb1_each_eulav(obj) VALUE obj;{ return bdb1_each_valuec(obj, DB_PREV, Qnil); }
+VALUE
+bdb1_each_value(VALUE obj)
+{
+    return bdb1_each_valuec(obj, DB_NEXT, Qnil);
+}
+
+VALUE
+bdb1_each_eulav(VALUE obj)
+{
+    return bdb1_each_valuec(obj, DB_PREV, Qnil);
+}
 
 static VALUE
-bdb1_each_keyc(obj, sens)
-    VALUE obj;
-    int sens;
+bdb1_each_keyc(VALUE obj, int sens)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1317,13 +1248,20 @@ bdb1_each_keyc(obj, sens)
     return obj;
 }
 
-VALUE bdb1_each_key(obj) VALUE obj;{ return bdb1_each_keyc(obj, DB_NEXT); }
-static VALUE bdb1_each_yek(obj) VALUE obj;{ return bdb1_each_keyc(obj, DB_PREV); }
+VALUE
+bdb1_each_key(VALUE obj)
+{
+    return bdb1_each_keyc(obj, DB_NEXT);
+}
 
 static VALUE
-bdb1_each_common(obj, sens)
-    VALUE obj;
-    int sens;
+bdb1_each_yek(VALUE obj)
+{
+    return bdb1_each_keyc(obj, DB_PREV);
+}
+
+static VALUE
+bdb1_each_common(VALUE obj, int sens)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1345,12 +1283,20 @@ bdb1_each_common(obj, sens)
     return obj;
 }
 
-static VALUE bdb1_each_pair(obj) VALUE obj;{ return bdb1_each_common(obj, DB_NEXT); }
-static VALUE bdb1_each_riap(obj) VALUE obj;{ return bdb1_each_common(obj, DB_PREV); }
+static VALUE
+bdb1_each_pair(VALUE obj)
+{
+    return bdb1_each_common(obj, DB_NEXT);
+}
+
+static VALUE
+bdb1_each_riap(VALUE obj)
+{
+    return bdb1_each_common(obj, DB_PREV);
+}
 
 VALUE
-bdb1_to_type(obj, result, flag)
-    VALUE obj, result, flag;
+bdb1_to_type(VALUE obj, VALUE result, VALUE flag)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1391,29 +1337,25 @@ bdb1_to_type(obj, result, flag)
 }
 
 static VALUE
-bdb1_to_a(obj)
-    VALUE obj;
+bdb1_to_a(VALUE obj)
 {
     return bdb1_to_type(obj, rb_ary_new(), Qtrue);
 }
 
 static VALUE
-bdb1_invert(obj)
-    VALUE obj;
+bdb1_invert(VALUE obj)
 {
     return bdb1_to_type(obj, rb_hash_new(), Qfalse);
 }
 
 static VALUE
-bdb1_to_hash(obj)
-    VALUE obj;
+bdb1_to_hash(VALUE obj)
 {
     return bdb1_to_type(obj, rb_hash_new(), Qtrue);
 }
 
 static VALUE
-bdb1_each_kv(obj, a, result, flag)
-    VALUE obj, a, result, flag;
+bdb1_each_kv(VALUE obj, VALUE a, VALUE result, VALUE flag)
 {
     bdb1_DB *dbst;
     DBT keys, key, data;
@@ -1457,9 +1399,7 @@ bdb1_each_kv(obj, a, result, flag)
  * If +assoc+ is +false+ return only the values.
  */
 static VALUE
-bdb1_bt_duplicates(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_bt_duplicates(int argc, VALUE *argv, VALUE obj)
 {
     VALUE a, b;
 
@@ -1476,8 +1416,7 @@ bdb1_bt_duplicates(argc, argv, obj)
  * Iterates over duplicate associations for the +key+.
  */
 static VALUE
-bdb1_bt_dup(obj, a)
-    VALUE a, obj;
+bdb1_bt_dup(VALUE obj, VALUE a)
 {
     return bdb1_each_kv(obj, a, Qnil, Qtrue);
 }
@@ -1489,22 +1428,19 @@ bdb1_bt_dup(obj, a)
  * Iterates over duplicate values for the +key+.
  */
 static VALUE
-bdb1_bt_dupval(obj, a)
-    VALUE a, obj;
+bdb1_bt_dupval(VALUE obj, VALUE a)
 {
     return bdb1_each_kv(obj, a, Qnil, Qfalse);
 }
 
 static VALUE
-bdb1_reject(obj)
-    VALUE obj;
+bdb1_reject(VALUE obj)
 {
     return rb_hash_delete_if(bdb1_to_hash(obj));
 }
 
 static VALUE
-bdb1_values(obj)
-    VALUE obj;
+bdb1_values(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1530,9 +1466,7 @@ bdb1_values(obj)
 }
 
 VALUE
-bdb1_internal_value(obj, a, b, sens)
-    VALUE obj, a, b;
-    int sens;
+bdb1_internal_value(VALUE obj, VALUE a, VALUE b, int sens)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1562,22 +1496,19 @@ bdb1_internal_value(obj, a, b, sens)
 }
 
 VALUE
-bdb1_key(obj, a)
-    VALUE obj, a;
+bdb1_key(VALUE obj, VALUE a)
 {
     return bdb1_internal_value(obj, a, Qtrue, DB_NEXT);
 }
 
 VALUE
-bdb1_has_value(obj, a)
-    VALUE obj, a;
+bdb1_has_value(VALUE obj, VALUE a)
 {
     return bdb1_internal_value(obj, a, Qfalse, DB_NEXT);
 }
 
 static VALUE
-bdb1_keys(obj)
-    VALUE obj;
+bdb1_keys(VALUE obj)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1603,8 +1534,7 @@ bdb1_keys(obj)
 }
 
 static VALUE
-bdb1_sync(obj)
-    VALUE obj;
+bdb1_sync(VALUE obj)
 {
     bdb1_DB *dbst;
 
@@ -1616,9 +1546,7 @@ bdb1_sync(obj)
 }
 
 static VALUE
-bdb1_values_at(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_values_at(int argc, VALUE *argv, VALUE obj)
 {
     VALUE result = rb_ary_new2(argc);
     long i;
@@ -1630,8 +1558,7 @@ bdb1_values_at(argc, argv, obj)
 }
 
 static VALUE
-bdb1_select(obj)
-    VALUE obj;
+bdb1_select(VALUE obj)
 {
     VALUE result = rb_ary_new();
 
@@ -1642,9 +1569,7 @@ bdb1_select(obj)
 }
 
 VALUE
-bdb1_each_vc(obj, replace, rtest)
-    VALUE obj;
-    int replace, rtest;
+bdb1_each_vc(VALUE obj, int replace, int rtest)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -1714,7 +1639,7 @@ bdb1_each_vc(obj, replace, rtest)
  *
  */
 void
-Init_bdb1()
+Init_bdb1(void)
 {
     bdb1_mMarshal = rb_const_get(rb_cObject, rb_intern("Marshal"));
     id_dump = rb_intern("dump");

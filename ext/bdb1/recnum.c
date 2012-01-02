@@ -3,9 +3,7 @@
 static ID id_cmp;
 
 static VALUE
-bdb1_recnum_init(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_recnum_init(int argc, VALUE *argv, VALUE obj)
 {
     VALUE *nargv;
     VALUE array = rb_str_new2("array_base");
@@ -26,9 +24,7 @@ bdb1_recnum_init(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_subseq(obj, beg, len)
-    VALUE obj;
-    long beg, len;
+bdb1_sary_subseq(VALUE obj, long beg, long len)
 {
     VALUE ary2, a;
     bdb1_DB *dbst;
@@ -52,8 +48,7 @@ bdb1_sary_subseq(obj, beg, len)
 }
 
 static VALUE
-bdb1_sary_entry(obj, position)
-    VALUE obj, position;
+bdb1_sary_entry(VALUE obj, VALUE position)
 {
     bdb1_DB *dbst;
     long offset;
@@ -95,9 +90,7 @@ bdb1_sary_entry(obj, position)
  *   +nil+ if +length+ is negative.
  */
 static VALUE
-bdb1_sary_aref(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_sary_aref(int argc, VALUE *argv, VALUE obj)
 {
     VALUE arg1, arg2;
     long beg, len;
@@ -133,9 +126,7 @@ bdb1_sary_aref(argc, argv, obj)
 }
 
 static VALUE
-bdb1_intern_shift_pop(obj, depart, len)
-    VALUE obj;
-    int depart, len;
+bdb1_intern_shift_pop(VALUE obj, int depart, int len)
 {
     bdb1_DB *dbst;
     DBT key, data;
@@ -161,9 +152,7 @@ bdb1_intern_shift_pop(obj, depart, len)
 }
 
 static void
-bdb1_sary_replace(obj, beg, len, rpl)
-    VALUE obj, rpl;
-    long beg, len;
+bdb1_sary_replace(VALUE obj, long beg, long len, VALUE rpl)
 {
     long i, j, rlen;
     VALUE tmp[2];
@@ -256,10 +245,7 @@ bdb1_sary_replace(obj, beg, len, rpl)
  *   using +to_a+.
  */
 static VALUE
-bdb1_sary_aset(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_aset(int argc, VALUE *argv, VALUE obj)
 {
     long  beg, len;
     bdb1_DB *dbst;
@@ -311,10 +297,7 @@ bdb1_sary_aset(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_insert(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_insert(int argc, VALUE *argv, VALUE obj)
 {
     long pos;
 
@@ -337,15 +320,13 @@ bdb1_sary_insert(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_at(obj, pos)
-    VALUE obj, pos;
+bdb1_sary_at(VALUE obj, VALUE pos)
 {
     return bdb1_sary_entry(obj, pos);
 }
 
 static VALUE
-bdb1_sary_first(obj)
-    VALUE obj;
+bdb1_sary_first(VALUE obj)
 {
     bdb1_DB *dbst;
     VALUE tmp;
@@ -356,8 +337,7 @@ bdb1_sary_first(obj)
 }
 
 static VALUE
-bdb1_sary_last(obj)
-    VALUE obj;
+bdb1_sary_last(VALUE obj)
 {
     bdb1_DB *dbst;
     VALUE tmp;
@@ -369,9 +349,7 @@ bdb1_sary_last(obj)
 }
 
 static VALUE
-bdb1_sary_fetch(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_sary_fetch(int argc, VALUE *argv, VALUE obj)
 {
     VALUE pos, ifnone;
     bdb1_DB *dbst;
@@ -393,8 +371,7 @@ bdb1_sary_fetch(argc, argv, obj)
 
 
 static VALUE
-bdb1_sary_concat(obj, y)
-    VALUE obj, y;
+bdb1_sary_concat(VALUE obj, VALUE y)
 {
     bdb1_DB *dbst;
     long i;
@@ -412,8 +389,7 @@ bdb1_sary_concat(obj, y)
 }
 
 static VALUE
-bdb1_sary_push(obj, y)
-    VALUE obj, y;
+bdb1_sary_push(VALUE obj, VALUE y)
 {
     bdb1_DB *dbst;
     VALUE tmp[2];
@@ -427,9 +403,7 @@ bdb1_sary_push(obj, y)
 }
 
 static VALUE
-bdb1_sary_push_m(argc, argv, obj)
-    int argc;
-    VALUE obj, *argv;
+bdb1_sary_push_m(int argc, VALUE *argv, VALUE obj)
 {
     bdb1_DB *dbst;
     long i;
@@ -451,10 +425,7 @@ bdb1_sary_push_m(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_s_create(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_s_create(int argc, VALUE *argv, VALUE obj)
 {
     VALUE res;
     int i;
@@ -470,8 +441,7 @@ bdb1_sary_s_create(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_shift(obj)
-    VALUE obj;
+bdb1_sary_shift(VALUE obj)
 {
     VALUE res;
     bdb1_DB *dbst;
@@ -483,8 +453,7 @@ bdb1_sary_shift(obj)
 }
 
 static VALUE
-bdb1_sary_pop(obj)
-    VALUE obj;
+bdb1_sary_pop(VALUE obj)
 {
     VALUE res;
     bdb1_DB *dbst;
@@ -496,10 +465,7 @@ bdb1_sary_pop(obj)
 }
 
 static VALUE
-bdb1_sary_unshift_m(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_unshift_m(int argc, VALUE *argv, VALUE obj)
 {
     bdb1_DB *dbst;
     VALUE tmp[3];
@@ -522,8 +488,7 @@ bdb1_sary_unshift_m(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_length(obj)
-    VALUE obj;
+bdb1_sary_length(VALUE obj)
 {
     bdb1_DB *dbst;
 
@@ -533,8 +498,7 @@ bdb1_sary_length(obj)
 }
 
 static VALUE
-bdb1_sary_empty_p(obj)
-    VALUE obj;
+bdb1_sary_empty_p(VALUE obj)
 {
     bdb1_DB *dbst;
 
@@ -544,29 +508,25 @@ bdb1_sary_empty_p(obj)
 }
 
 static VALUE
-bdb1_sary_rindex(obj, a)
-    VALUE obj, a;
+bdb1_sary_rindex(VALUE obj, VALUE a)
 {
     return bdb1_internal_value(obj, a, Qtrue, DB_PREV);
 }
 
 static VALUE
-bdb1_sary_to_a(obj)
-    VALUE obj;
+bdb1_sary_to_a(VALUE obj)
 {
     return bdb1_to_type(obj, rb_ary_new(), Qfalse);
 }
 
 static VALUE
-bdb1_sary_reverse_m(obj)
-    VALUE obj;
+bdb1_sary_reverse_m(VALUE obj)
 {
     return bdb1_to_type(obj, rb_ary_new(), Qnil);
 }
 
 static VALUE
-bdb1_sary_reverse_bang(obj)
-    VALUE obj;
+bdb1_sary_reverse_bang(VALUE obj)
 {
     long i, j;
     bdb1_DB *dbst;
@@ -592,15 +552,13 @@ bdb1_sary_reverse_bang(obj)
 }
 
 static VALUE
-bdb1_sary_collect_bang(obj)
-    VALUE obj;
+bdb1_sary_collect_bang(VALUE obj)
 {
     return bdb1_each_vc(obj, Qtrue, Qfalse);
 }
 
 static VALUE
-bdb1_sary_collect(obj)
-    VALUE obj;
+bdb1_sary_collect(VALUE obj)
 {
     if (!rb_block_given_p()) {
 	return bdb1_sary_to_a(obj);
@@ -609,9 +567,7 @@ bdb1_sary_collect(obj)
 }
 
 static VALUE
-bdb1_sary_values_at(argc, argv, obj)
-    int argc;
-    VALUE *argv, obj;
+bdb1_sary_values_at(int argc, VALUE *argv, VALUE obj)
 {
     VALUE result;
     long i;
@@ -624,8 +580,7 @@ bdb1_sary_values_at(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_select(obj)
-    VALUE obj;
+bdb1_sary_select(VALUE obj)
 {
     if (rb_block_given_p()) {
 	return bdb1_each_vc(obj, Qfalse, Qtrue);
@@ -634,16 +589,14 @@ bdb1_sary_select(obj)
 }
 
 static VALUE
-bdb1_sary_filter(obj)
-    VALUE obj;
+bdb1_sary_filter(VALUE obj)
 {
     rb_warn("BDB1::Recnum#filter is deprecated; use BDB1::Recnum#collect!");
     return bdb1_sary_collect_bang(obj);
 }
 
 static VALUE
-bdb1_sary_delete(obj, item)
-    VALUE obj, item;
+bdb1_sary_delete(VALUE obj, VALUE item)
 {
     bdb1_DB *dbst;
     long i1, i2;
@@ -672,8 +625,7 @@ bdb1_sary_delete(obj, item)
 }
 
 static VALUE
-bdb1_sary_delete_at_m(obj, a)
-    VALUE obj, a;
+bdb1_sary_delete_at_m(VALUE obj, VALUE a)
 {
     bdb1_DB *dbst;
     long pos;
@@ -694,8 +646,7 @@ bdb1_sary_delete_at_m(obj, a)
 }
 
 static VALUE
-bdb1_sary_reject_bang(obj)
-    VALUE obj;
+bdb1_sary_reject_bang(VALUE obj)
 {
     bdb1_DB *dbst;
     long i1, i2;
@@ -718,16 +669,14 @@ bdb1_sary_reject_bang(obj)
 }
 
 static VALUE
-bdb1_sary_delete_if(obj)
-    VALUE obj;
+bdb1_sary_delete_if(VALUE obj)
 {
     bdb1_sary_reject_bang(obj);
     return obj;
 }
 
 static VALUE
-bdb1_sary_replace_m(obj, obj2)
-    VALUE obj, obj2;
+bdb1_sary_replace_m(VALUE obj, VALUE obj2)
 {
     bdb1_DB *dbst;
 
@@ -738,8 +687,7 @@ bdb1_sary_replace_m(obj, obj2)
 }
 
 static VALUE
-bdb1_sary_clear(obj)
-    VALUE obj;
+bdb1_sary_clear(VALUE obj)
 {
     bdb1_DB *dbst;
     bdb1_clear(obj);
@@ -749,10 +697,7 @@ bdb1_sary_clear(obj)
 }
 
 static VALUE
-bdb1_sary_fill(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_fill(int argc, VALUE *argv, VALUE obj)
 {
     VALUE item, arg1, arg2, tmp[2];
     long beg, len, i;
@@ -789,8 +734,7 @@ bdb1_sary_fill(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_cmp(obj, obj2)
-    VALUE obj, obj2;
+bdb1_sary_cmp(VALUE obj, VALUE obj2)
 {
     bdb1_DB *dbst, *dbst2;
     VALUE a, a2, tmp, ary;
@@ -834,10 +778,7 @@ bdb1_sary_cmp(obj, obj2)
 }
 
 static VALUE
-bdb1_sary_slice_bang(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+bdb1_sary_slice_bang(int argc, VALUE *argv, VALUE obj)
 {
     VALUE arg1, arg2;
     long pos, len;
@@ -872,50 +813,43 @@ bdb1_sary_slice_bang(argc, argv, obj)
 }
 
 static VALUE
-bdb1_sary_plus(obj, y)
-    VALUE obj, y;
+bdb1_sary_plus(VALUE obj, VALUE y)
 {
     return rb_ary_plus(bdb1_sary_to_a(obj), y);
 }
 
 static VALUE
-bdb1_sary_times(obj, y)
-    VALUE obj, y;
+bdb1_sary_times(VALUE obj, VALUE y)
 {
     return rb_funcall(bdb1_sary_to_a(obj), rb_intern("*"), 1, y);
 }
 
 static VALUE
-bdb1_sary_diff(obj, y)
-    VALUE obj, y;
+bdb1_sary_diff(VALUE obj, VALUE y)
 {
     return rb_funcall(bdb1_sary_to_a(obj), rb_intern("-"), 1, y);
 }
 
 static VALUE
-bdb1_sary_and(obj, y)
-    VALUE obj, y;
+bdb1_sary_and(VALUE obj, VALUE y)
 {
     return rb_funcall(bdb1_sary_to_a(obj), rb_intern("&"), 1, y);
 }
 
 static VALUE
-bdb1_sary_or(obj, y)
-    VALUE obj, y;
+bdb1_sary_or(VALUE obj, VALUE y)
 {
     return rb_funcall(bdb1_sary_to_a(obj), rb_intern("|"), 1, y);
 }
 
 static VALUE
-bdb1_sary_compact(obj)
-    VALUE obj;
+bdb1_sary_compact(VALUE obj)
 {
     return rb_funcall(bdb1_sary_to_a(obj), rb_intern("compact"), 0, 0);
 }
 
 static VALUE
-bdb1_sary_compact_bang(obj)
-    VALUE obj;
+bdb1_sary_compact_bang(VALUE obj)
 {
     bdb1_DB *dbst;
     long i, j;
@@ -939,8 +873,7 @@ bdb1_sary_compact_bang(obj)
 }
 
 static VALUE
-bdb1_sary_nitems(obj)
-    VALUE obj;
+bdb1_sary_nitems(VALUE obj)
 {
     bdb1_DB *dbst;
     long i, j;
@@ -957,8 +890,7 @@ bdb1_sary_nitems(obj)
 }
 
 static VALUE
-bdb1_sary_each_index(obj)
-    VALUE obj;
+bdb1_sary_each_index(VALUE obj)
 {
     bdb1_DB *dbst;
     long i;
@@ -970,7 +902,8 @@ bdb1_sary_each_index(obj)
     return obj;
 }
 
-void bdb1_init_recnum()
+void
+bdb1_init_recnum(void)
 {
     id_cmp = rb_intern("<=>");
     bdb1_cRecnum = rb_define_class_under(bdb1_mDb, "Recnum", bdb1_cCommon);

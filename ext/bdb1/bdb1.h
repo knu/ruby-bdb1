@@ -116,7 +116,7 @@ extern VALUE bdb1_init _((int, VALUE *, VALUE));
 extern VALUE bdb1_put _((int, VALUE *, VALUE));
 extern VALUE bdb1_get _((int, VALUE *, VALUE));
 extern VALUE bdb1_del _((VALUE, VALUE));
-extern VALUE bdb1_test_load _((VALUE, DBT *, int));
+extern VALUE bdb1_test_load _((VALUE, const DBT *, int));
 extern int bdb1_test_error _((int));
 extern VALUE bdb1_each_value _((VALUE));
 extern VALUE bdb1_each_eulav _((VALUE));
