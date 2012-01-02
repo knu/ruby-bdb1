@@ -1283,7 +1283,7 @@ bdb1_each_valuec(obj, sens, result)
 	FREE_KEY(dbst, key);
 	interm = bdb1_test_load(obj, &data, FILTER_VALUE);
         rest = rb_yield(interm);
-	if (result != Qnil && RTEST(rest)) {
+	if (!NIL_P(result) && RTEST(rest)) {
 	    rb_ary_push(result, interm);
 	}
     } while (1);
