@@ -52,3 +52,5 @@ lib
 
 # For rubinius:
 #*.rbc
+
+.gdb_history
