@@ -235,7 +235,7 @@ bdb1_h_hash(const void *bytes, size_t length)
 	res = rb_funcall(obj, id_h_hash, 1, st);
     else
 	res = rb_funcall(dbst->h_hash, bdb1_id_call, 1, st);
-    return NUM2UINT(res);
+    return (u_int32_t)NUM2LONG(res);
 }
 
 static void
