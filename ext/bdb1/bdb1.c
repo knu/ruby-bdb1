@@ -61,7 +61,7 @@ test_dump(VALUE obj, DBT *key, VALUE a, int type_kv)
 	    tmp = rb_funcall(dbst->filter[type_kv], bdb1_id_call, 1, a);
  	}
     }
-    if (dbst->marshal) {
+    if (dbst->marshal != Qundef) {
         if (rb_obj_is_kind_of(a, bdb1_cDelegate)) {
 	    tmp = bdb1_deleg_to_orig(tmp);
 	}
@@ -88,7 +88,7 @@ test_ret(VALUE obj, VALUE tmp, VALUE a, int type_kv)
 {
     bdb1_DB *dbst;
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    if (dbst->marshal || NIL_P(a)) {
+    if (dbst->marshal != Qundef || NIL_P(a)) {
 	return a;
     }
     if (dbst->filter[type_kv]) {
@@ -119,7 +119,7 @@ bdb1_test_load(VALUE obj, const DBT *a, int type_kv)
     bdb1_DB *dbst;
 
     Data_Get_Struct(obj, bdb1_DB, dbst);
-    if (dbst->marshal) {
+    if (dbst->marshal != Qundef) {
 	res = rb_str_new(a->data, a->size);
 	if (dbst->filter[2 + type_kv]) {
 	    if (FIXNUM_P(dbst->filter[2 + type_kv])) {
@@ -164,7 +164,7 @@ test_load_dyna(VALUE obj, DBT *key, DBT *val)
 
     Data_Get_Struct(obj, bdb1_DB, dbst);
     res = bdb1_test_load(obj, val, FILTER_VALUE);
-    if (dbst->marshal && !SPECIAL_CONST_P(res)) {
+    if (dbst->marshal != Qundef && !SPECIAL_CONST_P(res)) {
 	del = Data_Make_Struct(bdb1_cDelegate, struct deleg_class,
 			       bdb1_deleg_mark, bdb1_deleg_free, delegst);
 	delegst->db = obj;
@@ -462,7 +462,7 @@ bdb1_i185_common(VALUE obj, VALUE dbstobj)
 	    dbst->options |= BDB1_MARSHAL;
 	    break;
         case Qfalse:
-	    dbst->marshal = Qfalse;
+	    dbst->marshal = Qundef;
 	    dbst->options &= ~BDB1_MARSHAL;
 	    break;
         default:
@@ -748,6 +748,7 @@ bdb1_s_alloc(VALUE obj)
     VALUE res, cl;
 
     res = Data_Make_Struct(obj, bdb1_DB, bdb1_mark, bdb1_free, dbst);
+    dbst->marshal = Qundef;
     dbst->options |= BDB1_NOT_OPEN;
     cl = obj;
     while (cl) {
