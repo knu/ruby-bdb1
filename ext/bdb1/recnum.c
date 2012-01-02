@@ -504,7 +504,7 @@ bdb1_sary_empty_p(VALUE obj)
 
     GetDB(obj, dbst);
     if (dbst->len < 0) rb_raise(bdb1_eFatal, "Invalid BDB::Recnum");
-    return (dbst->len)?Qfalse:Qtrue;
+    return dbst->len == 0 ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -737,7 +737,8 @@ static VALUE
 bdb1_sary_cmp(VALUE obj, VALUE obj2)
 {
     bdb1_DB *dbst, *dbst2;
-    VALUE a, a2, tmp, ary;
+    VALUE a, a2, tmp;
+    int ary;
     long i, len;
 
     if (obj == obj2) return INT2FIX(0);
@@ -748,14 +749,14 @@ bdb1_sary_cmp(VALUE obj, VALUE obj2)
 	if (len > RARRAY_LEN(obj2)) {
 	    len = RARRAY_LEN(obj2);
 	}
-	ary = Qtrue;
+	ary = 1;
     }
     else {
 	GetDB(obj2, dbst2);
 	if (len > dbst2->len) {
 	    len = dbst2->len;
 	}
-	ary = Qfalse;
+	ary = 0;
     }
     for (i = 0; i < len; i++) {
 	tmp = INT2NUM(i);
@@ -771,7 +772,7 @@ bdb1_sary_cmp(VALUE obj, VALUE obj2)
 	    return tmp;
 	}
     }
-    len = dbst->len - (ary?RARRAY_LEN(obj2):dbst2->len);
+    len = dbst->len - (ary ? RARRAY_LEN(obj2) : dbst2->len);
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);
     return INT2FIX(-1);
