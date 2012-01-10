@@ -1,7 +1,10 @@
 #include "bdb1.h"
 
 VALUE bdb1_eFatal;
-VALUE bdb1_mDb, bdb1_mMarshal, bdb1_cCommon, bdb1_cRecnum;
+VALUE bdb1_mDb, bdb1_mMarshal;
+/* Implements common methods for access to data. */
+VALUE bdb1_cCommon;
+VALUE bdb1_cRecnum;
 static ID id_dump, id_load;
 
 ID bdb1_id_current_db;
@@ -520,7 +523,6 @@ bdb1_hard_count(DB *dbp)
 
 /*
  * call-seq:
- *
  *   BDB1::Btree.new(name = nil, flags = "r", mode = 0, options = {})
  *   BDB1::Hash.new(name = nil, flags = "r", mode = 0, options = {})
  *   BDB1::Recnum.new(name = nil, flags = "r", mode = 0, options = {})
@@ -534,77 +536,130 @@ bdb1_hard_count(DB *dbp)
  *   If +nil+ is given, an on-memory database is created.
  *
  * * +flags+
+ *
  *   The flags must be the string "r", "r+", "w", "w+", "a", "a+" or
- *   and integer value.
+ *   an integer value.
  *
  *   The flags value must be set to 0 or by bitwise inclusively
- *   OR'ing together one or more of the following values
+ *   OR'ing together one or more of the following values:
  *
- *   * +BDB1::CREATE+
- *     Create any underlying files, as necessary. If the files
- *     do not already exist and the DB_CREATE flag is not
- *     specified, the call will fail.
+ *   * <code>BDB1::CREATE</code>
  *
- *   * +BDB1::RDONLY+
- *     Open the database for reading only. Any attempt to
- *     modify items in the database will fail regardless of the
- *     actual permissions of any underlying files.
+ *     Create any underlying files, as necessary.  If the files do not
+ *     already exist and the DB_CREATE flag is not specified, the call
+ *     will fail.
  *
- *   * +BDB1::TRUNCATE+
- *     Physically truncate the underlying database file,
- *     discarding all previous subdatabases or databases.
- *     Underlying filesystem primitives are used to implement
- *     this flag. For this reason it is only applicable to the
- *     physical database file and cannot be used to discard
- *     subdatabases.
+ *   * <code>BDB1::RDONLY</code>
  *
- *     The DB_TRUNCATE flag cannot be transaction protected,
- *     and it is an error to specify it in a transaction
- *     protected environment.
+ *     Open the database for reading only. Any attempt to modify items
+ *     in the database will fail regardless of the actual permissions
+ *     of any underlying files.
  *
- *   * +BDB1::WRITE+
+ *   * <code>BDB1::TRUNCATE</code>
+ *
+ *     Physically truncate the underlying database file, discarding
+ *     all previous subdatabases or databases.  Underlying filesystem
+ *     primitives are used to implement this flag. For this reason it
+ *     is only applicable to the physical database file and cannot be
+ *     used to discard subdatabases.
+ *
+ *     The DB_TRUNCATE flag cannot be transaction protected, and it is
+ *     an error to specify it in a transaction protected environment.
+ *
+ *   * <code>BDB1::WRITE</code>
+ *
  *     Open the database for writing. Without this flag, any
  *     attempt to modify items in the database will fail.
  *
  * * +mode+
+ *
  *   mode to create the file
  *
  * * +options+
+ *
  *   Hash, Possible options are (see the documentation of Berkeley DB
  *   for more informations)
  *
- *   * +set_flags+: general database configuration
- *   * +set_cachesize+: set the database cache size
- *   * +set_pagesize+: set the underlying database page size
- *   * +set_lorder+: set the database byte order
- *   * +set_store_key+: specify a Proc called before a key is stored
- *   * +set_fetch_key+: specify a Proc called after a key is read
- *   * +set_store_value+: specify a Proc called before a value is stored
- *   * +set_fetch_value+: specify a Proc called after a value is read
+ *   * +set_flags+
  *
- * * +options specific to BDB1::Btree+
+ *     general database configuration
  *
- *   * +set_bt_compare+: specify a Btree comparison function
- *   * +set_bt_minkey+: set the minimum number of keys per Btree page
- *   * +set_bt_prefix+: specify a Btree prefix comparison function
+ *   * +set_cachesize+
  *
- * * +options specific to BDB1::Hash+
+ *     set the database cache size
  *
- *   * +set_h_ffactor+: set the Hash table density
- *   * +set_h_hash+: specify a hashing function
- *   * +set_h_nelem+: set the Hash table size
+ *   * +set_pagesize+
  *
- * * +options specific to BDB1::Recnum+
+ *     set the underlying database page size
  *
- *   * +set_re_delim+: set the variable-length record delimiter
- *   * +set_re_len+: set the fixed-length record length
- *   * +set_re_pad+: set the fixed-length record pad byte
+ *   * +set_lorder+
  *
- *   Proc given to +set_bt_compare+, +set_bt_prefix+,
- *   +set_h_hash+, +set_store_key+, +set_fetch_key+,
- *   +set_store_value+ and +set_fetch_value+ can be also
- *   specified as a method (replace the prefix +set_+ with
- *   +bdb1_+)
+ *     set the database byte order
+ *
+ *   * +set_store_key+
+ *
+ *     specify a Proc called before a key is stored
+ *
+ *   * +set_fetch_key+
+ *
+ *     specify a Proc called after a key is read
+ *
+ *   * +set_store_value+
+ *
+ *     specify a Proc called before a value is stored
+ *
+ *   * +set_fetch_value+
+ *
+ *     specify a Proc called after a value is read
+ *
+ * * options specific to <code>BDB1::Btree</code>
+ *
+ *   * +set_bt_compare+
+ *
+ *     specify a Btree comparison function
+ *
+ *   * +set_bt_minkey+
+ *
+ *     set the minimum number of keys per Btree page
+ *
+ *   * +set_bt_prefix+
+ *
+ *     specify a Btree prefix comparison function
+ *
+ *
+ * * options specific to <code>BDB1::Hash</code>
+ *
+ *   * +set_h_ffactor+
+ *
+ *     set the Hash table density
+ *
+ *   * +set_h_hash+
+ *
+ *     specify a hashing function
+ *
+ *   * +set_h_nelem+
+ *
+ *     set the Hash table size
+ *
+ *
+ * * options specific to <code>BDB1::Recnum</code>
+ *
+ *   * +set_re_delim+
+ *
+ *     set the variable-length record delimiter
+ *
+ *   * +set_re_len+
+ *
+ *     set the fixed-length record length
+ *
+ *   * +set_re_pad+
+ *
+ *     set the fixed-length record pad byte
+ *
+ *   Proc given to +set_bt_compare+, +set_bt_prefix+, +set_h_hash+,
+ *   +set_store_key+, +set_fetch_key+, +set_store_value+ and
+ *   +set_fetch_value+ can be also specified as a method (replace the
+ *   prefix +set_+ with +bdb1_+)
  *
  *   For example:
  *
@@ -864,8 +919,9 @@ bdb1_s_open(int argc, VALUE *argv, VALUE obj)
  * Stores the +value+ associating with +key+ and returns the value
  * stored.
  *
- * +flags+ can have the value +DBD::NOOVERWRITE+, in this case it will
- * return +nil+ if the specified key exist, otherwise +true+.
+ * +flags+ can have the value <code>DBD::NOOVERWRITE</code>, in this
+ * case it will return +nil+ if the specified key exist, otherwise
+ * +true+.
  */
 VALUE
 bdb1_put(int argc, VALUE *argv, VALUE obj)
@@ -1607,8 +1663,8 @@ bdb1_each_vc(VALUE obj, int replace, int rtest)
 }
 
 /*
- * This interface if for the version 1.85 and 1.86 of Berkeley DB (for
- * Berkeley version >= 2 see bdb)
+ * This interface is for the version 1.85 and 1.86 of Berkeley DB.
+ * For Berkeley version >= 2 see bdb.
  *
  * Developers may choose to store data in any of several different
  * storage structures to satisfy the requirements of a particular
@@ -1652,7 +1708,7 @@ Init_bdb1(void)
     }
     bdb1_mDb = rb_define_module("BDB1");
     bdb1_eFatal = rb_define_class_under(bdb1_mDb, "Fatal", rb_eStandardError);
-/* CONSTANT */
+
     rb_define_const(bdb1_mDb, "VERSION_MAJOR", INT2FIX(DB_VERSION_MAJOR));
     rb_define_const(bdb1_mDb, "VERSION_MINOR", INT2FIX(DB_VERSION_MINOR));
     rb_define_const(bdb1_mDb, "RELEASE_PATCH", INT2FIX(DB_RELEASE_PATCH));
@@ -1673,7 +1729,7 @@ Init_bdb1(void)
     rb_define_const(bdb1_mDb, "TRUNCATE", INT2FIX(DB_TRUNCATE));
     rb_define_const(bdb1_mDb, "WRITE", INT2FIX(DB_WRITE));
     rb_define_const(bdb1_mDb, "NOOVERWRITE", INT2FIX(DB_NOOVERWRITE));
-/* DATABASE */
+
     bdb1_cCommon = rb_define_class_under(bdb1_mDb, "Common", rb_cObject);
     rb_define_method(bdb1_cCommon, "initialize", bdb1_init, -1);
     rb_include_module(bdb1_cCommon, rb_mEnumerable);

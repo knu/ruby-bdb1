@@ -94,6 +94,9 @@ bdb1_deleg_to_orig(VALUE obj)
     return delegst->obj;
 }
 
+/*
+ * Don't use this, please.
+ */
 static VALUE
 bdb1_deleg_orig(VALUE obj)
 {
@@ -170,7 +173,6 @@ bdb1_init_delegator(void)
     rb_define_method(bdb1_cDelegate, "to_proc", bdb1_deleg_to_proc, 0);
     rb_define_method(bdb1_cDelegate, "_dump", bdb1_deleg_dump, 1);
     rb_define_singleton_method(bdb1_cDelegate, "_load", bdb1_deleg_load, 1);
-    /* don't use please */
     rb_define_method(bdb1_cDelegate, "to_orig", bdb1_deleg_to_orig, 0);
     rb_define_method(rb_mKernel, "to_orig", bdb1_deleg_orig, 0);
 }

@@ -73,12 +73,14 @@ bdb1_sary_entry(VALUE obj, VALUE position)
  * Element reference - with the following syntax:
  *
  * * db[nth]
+ *
  *   Retrieves the +nth+ item from an array.  Index starts from zero.
  *   If index is the negative, counts backward from the end of the
  *   array.  The index of the last element is -1. Returns +nil+, if
  *   the +nth+ element does not exist in the array.
  *
  * * db[start..end]
+ *
  *   Returns an array containing the objects from +start+ to +end+,
  *   including both ends. if end is larger than the length of the
  *   array, it will be rounded to the length.  If +start+ is out of an
@@ -86,6 +88,7 @@ bdb1_sary_entry(VALUE obj, VALUE position)
  *   with in array range, returns empty array ([]).
  *
  * * db[start, length]
+ *
  *   Returns an array containing +length+ items from +start+.  Returns
  *   +nil+ if +length+ is negative.
  */
@@ -230,16 +233,19 @@ bdb1_sary_replace(VALUE obj, long beg, long len, VALUE rpl)
  * Element assignment - with the following syntax:
  *
  * * db[nth] = val
+ *
  *   Changes the +nth+ element of the array into +val+.  If +nth+ is
  *   larger than array length, the array shall be extended
  *   automatically.  Extended region shall be initialized by +nil+.
  *
  * * db[start..end] = val
+ *
  *   Replaces the items from +start+ to +end+ with +val+.  If +val+ is
  *   not an array, the type of +val+ will be converted into the Array
  *   using +to_a+ method.
  *
  * * db[start, length] = val
+ *
  *   Replaces the +length+ items from +start+ with +val+.  If +val+ is
  *   not an array, the type of +val+ will be converted into the Array
  *   using +to_a+.
