@@ -17,7 +17,7 @@ bdb1_recnum_init(int argc, VALUE *argv, VALUE obj)
 	argc++;
     }
     rb_hash_aset(argv[argc - 1], array, INT2FIX(0));
-    if (rb_hash_aref(argv[argc - 1], sarray) != rb_hash_ifnone(argv[argc - 1])) {
+    if (rb_hash_lookup2(argv[argc - 1], sarray, Qundef) != Qundef) {
 	rb_hash_aset(argv[argc - 1], sarray, INT2FIX(0));
     }
     return bdb1_init(argc, argv, obj);
