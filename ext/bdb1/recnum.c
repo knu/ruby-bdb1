@@ -137,7 +137,9 @@ bdb1_intern_shift_pop(VALUE obj, int depart, int len)
     db_recno_t recno;
     VALUE res;
 
+#if defined(RUBY_SAFE_LEVEL_MAX) && RUBY_SAFE_LEVEL_MAX >= 4
     rb_secure(4);
+#endif
     GetDB(obj, dbst);
     INIT_RECNO(dbst, key, recno);
     DATA_ZERO(data);
